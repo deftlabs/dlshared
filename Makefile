@@ -31,3 +31,9 @@ test: compile
 	@cd src/deftlabs.com/util; go test
 	@cd src/deftlabs.com/log; go test
 	@cd src/deftlabs.com/kernel; go test
+
+initlibs:
+	@go get github.com/mreiferson/go-httpclient
+	@go get labix.org/v2/mgo
+	@go get github.com/daviddengcn/go-ljson-conf
+	@go get github.com/gorilla/mux
