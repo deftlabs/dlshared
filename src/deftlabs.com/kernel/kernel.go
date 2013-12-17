@@ -46,7 +46,7 @@ func (self *Kernel) AddComponent(name string, component Component) {
 
 func (self *Kernel) Stop() error {
 
-	self.Logf(slogger.Info, "Stopping %s server - version: %s- config file %s", self.Id, self.Configuration.Version, self.Configuration.FileName)
+	self.Logf(slogger.Info, "Stopping %s server - version: %s - config file %s", self.Id, self.Configuration.Version, self.Configuration.FileName)
 
 	for i := len(self.components)-1 ; i >= 0 ; i-- {
 		if  err := self.components[i].Stop(self); err != nil {
