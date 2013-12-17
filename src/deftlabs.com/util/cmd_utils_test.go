@@ -23,14 +23,14 @@ import (
 
 func TestCmdExecWithMaxTimeNoWait(t *testing.T) {
 
-	if err := CmdExecWithMaxTime("uptime", 1000, nil, nil); err != nil {
+	if killed, err := CmdExecWithMaxTime("uptime", 2000, nil, nil); err != nil || killed {
 		t.Errorf("CmdExecWithMaxTime is broken:", err)
 	}
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	if err := CmdExecWithMaxTime("uptime", 1000, &stdout, &stderr); err != nil {
+	if killed, err := CmdExecWithMaxTime("uptime", 1000, &stdout, &stderr); err != nil || killed {
 		t.Errorf("CmdExecWithMaxTime is broken", err)
 	}
 
@@ -48,7 +48,7 @@ func TestCmdExecWithMaxTimeWithWait(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	if err := CmdExecWithMaxTime("../../../test/exec_test.sh", 250, &stdout, &stderr); err != nil {
+	if killed, err := CmdExecWithMaxTime("../../../test/exec_test.sh", 250, &stdout, &stderr); err != nil || !killed {
 		t.Errorf("CmdExecWithMaxTime is broken", err)
 	}
 
@@ -66,7 +66,7 @@ func TestCmdExecWithMaxTimeWithBwmNg(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	if err := CmdExecWithMaxTime("bwm-ng", 250, &stdout, &stderr); err != nil {
+	if killed, err := CmdExecWithMaxTime("bwm-ng", 250, &stdout, &stderr); err != nil || !killed {
 		t.Errorf("CmdExecWithMaxTime is broken", err)
 	}
 
@@ -84,7 +84,7 @@ func TestCmdExecWithMaxTimeWithCat(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	if err := CmdExecWithMaxTime("cat", 250, &stdout, &stderr, "/dev/urandom"); err != nil {
+	if killed, err := CmdExecWithMaxTime("cat", 250, &stdout, &stderr, "/dev/urandom"); err != nil || !killed {
 		t.Errorf("CmdExecWithMaxTime is broken", err)
 	}
 
@@ -99,13 +99,13 @@ func TestCmdExecWithMaxTimeWithCat(t *testing.T) {
 }
 
 func TestCmdExecWithMissingCmd(t *testing.T) {
-	if err := CmdExecWithMaxTime("garbage123", 1000, nil, nil); err == nil {
+	if killed, err := CmdExecWithMaxTime("garbage123", 1000, nil, nil); err == nil || killed {
 		t.Errorf("CmdExecWithMaxTime is broken - missing command does not break")
 	}
 }
 
 func TestCmdExecWithMissingBadParams(t *testing.T) {
-	if err := CmdExecWithMaxTime("top", 1000, nil, nil, "-skdfjaskdf"); err == nil {
+	if killed, err := CmdExecWithMaxTime("top", 1000, nil, nil, "-skdfjaskdf"); err == nil || killed {
 		t.Errorf("CmdExecWithMaxTime is broken - bad command param does not break")
 	}
 }

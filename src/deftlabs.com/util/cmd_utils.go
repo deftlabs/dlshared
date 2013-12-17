@@ -26,8 +26,9 @@ import (
 // the specified amount of time, the command will be killed. If you
 // want access to the stdout/err then you need to pass in a Writer to receive the data.
 // This does not support sending data to the command executing. This method will panic if
-// maxTimeMs is <= 0. If the cmdName length is zero, it will also panic.
-func CmdExecWithMaxTime(cmdName string, maxTimeMs int64, stdOutPipe io.Writer, stdErrPipe io.Writer, args ...string) error {
+// maxTimeMs is <= 0. If the cmdName length is zero, it will also panic. This returns true
+// if the process was killed.
+func CmdExecWithMaxTime(cmdName string, maxTimeMs int64, stdOutPipe io.Writer, stdErrPipe io.Writer, args ...string) (bool, error) {
 
 	if maxTimeMs <= 0 {
 		panic("You must set maxTimeMs to greater than zero")
@@ -42,16 +43,16 @@ func CmdExecWithMaxTime(cmdName string, maxTimeMs int64, stdOutPipe io.Writer, s
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	if err = cmd.Start(); err != nil {
-		return err
+		return false, err
 	}
 
 	if stdErrPipe != nil {
@@ -67,16 +68,11 @@ func CmdExecWithMaxTime(cmdName string, maxTimeMs int64, stdOutPipe io.Writer, s
 	select {
 		case <-time.After(time.Duration(maxTimeMs) * time.Millisecond): {
 			err = cmd.Process.Kill()
-
-			// The goroutine will be able to exit because wait returns after the kill
 			<-done
-			return err
+			return true, err
 		}
 
-		case err = <-done:
-			return err
+		case err = <-done: return false, err
 	}
-
-	return err
 }
 
