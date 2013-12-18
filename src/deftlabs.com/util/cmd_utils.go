@@ -28,7 +28,7 @@ import (
 // This does not support sending data to the command executing. This method will panic if
 // maxTimeMs is <= 0. If the cmdName length is zero, it will also panic. This returns true
 // if the process was killed.
-func CmdExecWithMaxTime(cmdName string, maxTimeMs int64, stdOutPipe io.Writer, stdErrPipe io.Writer, args ...string) (bool, error) {
+func CmdExecWithMaxTime(cmdName string, maxTimeMs int, stdOutPipe io.Writer, stdErrPipe io.Writer, args ...string) (bool, error) {
 
 	if maxTimeMs <= 0 {
 		panic("You must set maxTimeMs to greater than zero")
