@@ -59,16 +59,11 @@ func HttpPostJson(url string, value interface{}) ([]byte, error) {
 
 	defer response.Body.Close()
 
-	// We do not return the response so don't report if there is an error.
-	data, err := ioutil.ReadAll(response.Body)
-
-		/*
-	if err != nil {
-
+	if data, err := ioutil.ReadAll(response.Body); err != nil {
+		return nil, err
+	} else {
+		return data, nil
 	}
-	*/
-
-	return data, nil
 }
 
 func HttpPostBson(url string, bsonDoc interface{}) ([]byte, error) {
