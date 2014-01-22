@@ -18,8 +18,57 @@ package deftlabsutil
 
 
 import (
+	//"fmt"
+	"bytes"
 	"testing"
+	"encoding/binary"
 )
+
+func TestExtractUInt32(t *testing.T) {
+
+	buf := new(bytes.Buffer)
+
+	var value uint32 = 4294967295
+
+	if err := binary.Write(buf, binary.LittleEndian, value); err != nil {
+		t.Errorf("binary.Write failed:", err)
+	}
+
+	raw := buf.Bytes()
+
+	if len(raw) != 4 {
+		t.Errorf("TestExtractUInt32 is broken result buffer length is not four")
+	}
+
+	result := ExtractUInt32(raw, 0)
+
+	if result != value {
+		t.Errorf("TestExtractUInt32 is broken result does not equal value")
+	}
+}
+
+func TestExtractUInt16(t *testing.T) {
+
+	buf := new(bytes.Buffer)
+
+	var value uint16 = 65535
+
+	if err := binary.Write(buf, binary.LittleEndian, value); err != nil {
+		t.Errorf("binary.Write failed:", err)
+	}
+
+	raw := buf.Bytes()
+
+	if len(raw) != 2 {
+		t.Errorf("TestExtractUInt32 is broken result buffer length is not two")
+	}
+
+	result := ExtractUInt16(raw, 0)
+
+	if result != value {
+		t.Errorf("TestExtractUInt32 is broken result does not equal value")
+	}
+}
 
 func TestInt32 (t *testing.T) {
 

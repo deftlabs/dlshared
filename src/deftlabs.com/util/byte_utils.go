@@ -17,11 +17,19 @@
 package deftlabsutil
 
 import(
-	"labix.org/v2/mgo/bson"
 	"deftlabs.com/log"
+	"labix.org/v2/mgo/bson"
 )
 
 const NullCharacter = '\x00'
+
+func ExtractUInt32(data []byte, offset int) uint32 {
+	return (uint32(data[offset]) << 0) | (uint32(data[offset+1]) << 8) | (uint32(data[offset+2]) << 16) | (uint32(data[offset+3]) << 24)
+}
+
+func ExtractUInt16(data []byte, offset int) uint16 {
+	return (uint16(data[offset]) << 0) | (uint16(data[offset+1]) << 8)
+}
 
 func ExtractInt32(data []byte, offset int) int32 {
 	return int32((uint32(data[offset]) << 0) | (uint32(data[offset+1]) << 8) | (uint32(data[offset+2]) << 16) | (uint32(data[offset+3]) << 24))
