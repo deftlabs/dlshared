@@ -18,7 +18,6 @@ package deftlabsutil
 
 import (
 	"fmt"
-	"github.com/mreiferson/go-httpclient"
 	"net/http"
 	"io/ioutil"
 	"time"
@@ -26,6 +25,8 @@ import (
 	"strings"
 	"errors"
 	"labix.org/v2/mgo/bson"
+	"encoding/json"
+	"github.com/mreiferson/go-httpclient"
 )
 
 const (
@@ -35,11 +36,46 @@ const (
 	ContentTypeTextPlain = "text/plain; charset=utf-8"
 )
 
-func HttpPostBson(url string, bsonDoc interface{}) error {
+func HttpPostJson(url string, value interface{}) ([]byte, error) {
+
+	rawJson, err := json.Marshal(value)
+	if err != nil {
+		return nil, err
+	}
+
+	httpClient, httpTransport := getDefaultHttpClient()
+	defer httpTransport.Close()
+
+	request, err := http.NewRequest("POST", url, bytes.NewReader(rawJson))
+	if err != nil {
+		return nil, err
+	}
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	response, err := httpClient.Do(request)
+	if err != nil {
+		return nil, err
+	}
+
+	defer response.Body.Close()
+
+	// We do not return the response so don't report if there is an error.
+	data, err := ioutil.ReadAll(response.Body)
+
+		/*
+	if err != nil {
+
+	}
+	*/
+
+	return data, nil
+}
+
+func HttpPostBson(url string, bsonDoc interface{}) ([]byte, error) {
 
 	rawBson, err := bson.Marshal(bsonDoc)
-	if (err != nil) {
-		return err
+	if err != nil {
+		return nil, err
 	}
 
 	httpClient, httpTransport := getDefaultHttpClient()
@@ -47,21 +83,23 @@ func HttpPostBson(url string, bsonDoc interface{}) error {
 
 	request, err := http.NewRequest("POST", url, bytes.NewReader(rawBson))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	response, err := httpClient.Do(request)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	defer response.Body.Close()
 
 	// We do not return the response so don't report if there is an error.
-	ioutil.ReadAll(response.Body)
-
-	return nil
+	if data, err := ioutil.ReadAll(response.Body); err != nil {
+		return nil, err
+	} else {
+		return data, nil
+	}
 }
 
 func getDefaultHttpClient() (*http.Client, *httpclient.Transport) {
