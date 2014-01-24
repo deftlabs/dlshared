@@ -19,8 +19,56 @@ package deftlabsutil
 import (
 	"fmt"
 	"crypto/md5"
+	"encoding/base64"
 	"deftlabs.com/log"
 )
+
+// Encodes the string to base64. This method panics if the value passed is nil
+// or length is zero.
+func EncodeStrToBase64(v string) string {
+
+	if len(v) == 0 {
+		panic("EncodeStrToBase64 - value passed is nil or empty")
+	}
+
+	return base64.StdEncoding.EncodeToString([]byte(v))
+}
+
+// Encodes the byte array to base64. This method panics if the value passed is nil
+// or length is zero.
+func EncodeToBase64(v []byte) string {
+	if len(v) == 0 {
+		panic("EncodeStrToBase64 - value passed is nil or empty")
+	}
+
+	return base64.StdEncoding.EncodeToString(v)
+}
+
+// Decodes the base64 string. This method panics if the value passed is nil
+// or length is zero.
+func DecodeBase64(v string) ([]byte, error) {
+	if len(v) == 0 {
+		panic("DecodeBase64 - value passed is nil or empty")
+	}
+
+	return base64.StdEncoding.DecodeString(v)
+}
+
+// Decodes the base64 string to a string. This method panics if the value passed is nil
+// or length is zero.
+func DecodeBase64ToStr(v string) (string, error) {
+	if len(v) == 0 {
+		panic("DecodeBase64 - value passed is nil or empty")
+	}
+
+	data, err := base64.StdEncoding.DecodeString(v)
+
+	if err != nil {
+		return "", err
+	}
+
+	return string(data), nil
+}
 
 func Md5HexFromBytes(v []byte) (string, error) {
 
