@@ -1,5 +1,5 @@
 /**
- * (C) Copyright 2013 Deft Labs
+ * (C) Copyright 2013, Deft Labs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,31 +17,33 @@
 package deftlabsutil
 
 import (
-	"crypto/md5"
 	"fmt"
-	"errors"
-	"io"
+	"crypto/md5"
+	"deftlabs.com/log"
 )
 
-func Md5Hex(v string) (string, error) {
+func Md5HexFromBytes(v []byte) (string, error) {
 
-	if v == "" {
-		return "", errors.New("Value cannot be nil/empty")
+	if len(v) == 0 {
+		return "", slogger.NewStackError("Value cannot be nil/empty")
 	}
 
 	h := md5.New()
 
-	written, err := io.WriteString(h, v)
+	written, err := h.Write(v)
 
 	if err != nil {
 		return "", err
 	}
 
 	if written != len(v) {
-		return "", errors.New("Written does not equal length")
+		return "", slogger.NewStackError("Written does not equal length - written: %d - len: %d", written, len(v))
 	}
 
 	return fmt.Sprintf("%x", h.Sum(nil)), nil
+}
 
+func Md5Hex(v string) (string, error) {
+	return Md5HexFromBytes([]byte(v))
 }
 

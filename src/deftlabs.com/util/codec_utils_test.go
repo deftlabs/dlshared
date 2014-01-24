@@ -1,5 +1,5 @@
 /**
- * (C) Copyright 2013 Deft Labs
+ * (C) Copyright 2013, Deft Labs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,13 @@ package deftlabsutil
 import (
 	"testing"
 )
+
+func TestMd5HexFromBytes(t *testing.T) {
+
+	if result, err := Md5HexFromBytes([]byte("try this example")); err != nil || result != "479491a4d572898b1b2e31d3417dc6e6" {
+		t.Errorf("Md5Hex is broken - expected: 479491a4d572898b1b2e31d3417dc6e6")
+	}
+}
 
 func TestMd5Hex(t *testing.T) {
 
