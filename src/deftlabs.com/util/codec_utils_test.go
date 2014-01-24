@@ -16,14 +16,31 @@
 
 package deftlabsutil
 
-import (
-	"testing"
-)
+import "testing"
+//import "fmt"
 
-func TestMd5HexFromBytes(t *testing.T) {
+func TestEncodeStrToBase64(t *testing.T) {
 
-	if result, err := Md5HexFromBytes([]byte("try this example")); err != nil || result != "479491a4d572898b1b2e31d3417dc6e6" {
-		t.Errorf("Md5Hex is broken - expected: 479491a4d572898b1b2e31d3417dc6e6")
+	test := "try this example"
+
+	result := EncodeStrToBase64(test)
+
+	if len(result) == 0 {
+		t.Errorf("EncodeStrToBase64 is broken - empty/nil result")
+	}
+
+	if result != "dHJ5IHRoaXMgZXhhbXBsZQ==" {
+		t.Errorf("EncodeStrToBase64 is broken - result is not what is expected")
+	}
+
+	decoded, err := DecodeBase64ToStr("dHJ5IHRoaXMgZXhhbXBsZQ==")
+
+	if err != nil {
+		t.Errorf("EncodeStrToBase64 is broken - DecodeBase64ToStr return an error", err)
+	}
+
+	if decoded != test {
+		t.Errorf("EncodeStrToBase64 is broken - decoded value does not equal original")
 	}
 }
 
