@@ -18,6 +18,7 @@ SHELL := /bin/bash
 
 compile:
 	@cd src/deftlabs.com/util; go build
+	@cd src/deftlabs.com/ds; go build
 	@cd src/deftlabs.com/log; go build
 	@cd src/deftlabs.com/kernel; go build
 	@cd src/deftlabs.com/net/http; go build
