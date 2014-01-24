@@ -33,24 +33,49 @@ type Kernel struct {
 	slogger.Logger
 }
 
-type Component interface {
-	Start(kernel *Kernel) error
-	Stop(kernel *Kernel) error
-	Id() string
+type Component struct {
+	componentId string
+	singleton interface{}
+	startFunction StartStopFunction
+	stopFunction StartStopFunction
 }
 
-func (self *Kernel) AddComponent(name string, component Component) {
+type StartStopFunction func(kernel *Kernel) error
+
+// Register a component with a start and stop functions.
+func (self *Kernel) AddComponentWithStartStopFunctions(componentId string, singleton interface{}, startFunction StartStopFunction, stopFunction StartStopFunction) {
+
+	component := Component{ componentId : componentId, singleton : singleton, startFunction : startFunction, stopFunction : stopFunction }
+
 	self.components = append(self.components , component)
-	self.Components[name] = component
+	self.Components[componentId] = singleton
 }
 
+// Register a component with a start function.
+func (self *Kernel) AddComponentWithStartFunction(componentId string, singleton interface{}, startFunction StartStopFunction) {
+	self.AddComponentWithStartStopFunctions(componentId, singleton, startFunction, nil)
+}
+
+// Register a component with a stop function.
+func (self *Kernel) AddComponentWithStopFunction(componentId string, singleton interface{}, stopFunction StartStopFunction) {
+	self.AddComponentWithStartStopFunctions(componentId, singleton, nil, stopFunction)
+}
+
+// Register a component without a start or stop function..
+func (self *Kernel) AddComponent(componentId string, singleton interface{}) {
+	self.AddComponentWithStartStopFunctions(componentId, singleton, nil, nil)
+}
+
+// Stop the kernel. Call this before exiting.
 func (self *Kernel) Stop() error {
 
 	self.Logf(slogger.Info, "Stopping %s server - version: %s - config file %s", self.Id, self.Configuration.Version, self.Configuration.FileName)
 
 	for i := len(self.components)-1 ; i >= 0 ; i-- {
-		if  err := self.components[i].Stop(self); err != nil {
-			return err
+		if self.components[i].stopFunction != nil {
+			if  err := self.components[i].stopFunction(self); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -59,6 +84,7 @@ func (self *Kernel) Stop() error {
 	return nil
 }
 
+// Call this after the kernel has been created and components registered.
 func (self *Kernel) Start() error {
 
 	rand.Seed(time.Now().UTC().UnixNano())
@@ -66,8 +92,10 @@ func (self *Kernel) Start() error {
 	self.Logf(slogger.Info, "Starting %s server - version: %s - config file: %s", self.Id, self.Configuration.Version, self.Configuration.FileName)
 
 	for i := range self.components {
-		if  err := self.components[i].Start(self); err != nil {
-			return err
+		if self.components[i].startFunction != nil {
+			if  err := self.components[i].startFunction(self); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -76,7 +104,7 @@ func (self *Kernel) Start() error {
 	return nil
 }
 
-func NewKernel(id, configFileName string) (*Kernel, error) {
+func newKernel(id, configFileName string) (*Kernel, error) {
 
 	// Init the application configuration
 	conf, err := NewConfiguration(configFileName)
@@ -99,24 +127,19 @@ func NewKernel(id, configFileName string) (*Kernel, error) {
 	return kernel, nil
 }
 
-// Call this from your main to start the server.
-func StartKernel(id string, configFileName string, components []Component) (*Kernel, error) {
+// Call this from your main to create the kernel. After init kernel is called you must add
+// your components and then call kernel.Start()
+func StartKernel(id string, configFileName string, addComponentsFunction func(kernel *Kernel)) (*Kernel, error) {
 
-	kernel, err := NewKernel(id, configFileName)
-
+	kernel, err := newKernel(id, configFileName)
 	if err != nil {
 		return nil, err
 	}
 
-	if components != nil {
-		for _, component := range components {
-			kernel.AddComponent(component.Id(), component)
-		}
-	}
+	addComponentsFunction(kernel)
 
-	if err := kernel.Start(); err != nil {
-		kernel.Logf(slogger.Error, "Error starting the server - exiting: %v", err)
-		os.Exit(1)
+    if err = kernel.Start(); err != nil {
+		return nil, err
 	}
 
 	return kernel, nil
