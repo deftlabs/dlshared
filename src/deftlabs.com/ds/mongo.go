@@ -166,5 +166,3 @@ func (self *Mongo) Stop(kernel *deftlabskernel.Kernel) error {
 	return nil
 }
 
-func (self *Mongo) Id() string { return self.componentId }
-
