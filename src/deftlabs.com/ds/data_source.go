@@ -43,6 +43,52 @@ func (self *DataSource) Delete(selector interface{}) error {
 	return err
 }
 
+// Ensure a unique, non-sparse index is created. This does not create in the background. This does
+// NOT drop duplicates if they exist. Duplicates will cause an error.
+func (self *DataSource) EnsureUniqueIndex(fields []string) error {
+	return self.Collection().EnsureIndex(mgo.Index{
+		Key: fields,
+		Unique: true,
+		DropDups: true,
+		Background: false,
+		Sparse: false,
+	})
+}
+
+// Ensure a non-unique, non-sparse index is created. This does not create in the background.
+func (self *DataSource) EnsureIndex(fields []string) error {
+	return self.Collection().EnsureIndex(mgo.Index{
+		Key: fields,
+		Unique: false,
+		DropDups: true,
+		Background: false,
+		Sparse: false,
+	})
+}
+
+// Ensure a non-unique, sparse index is created. This does not create in the background.
+func (self *DataSource) EnsureSparseIndex(fields []string) error {
+	return self.Collection().EnsureIndex(mgo.Index{
+		Key: fields,
+		Unique: false,
+		DropDups: true,
+		Background: false,
+		Sparse: true,
+	})
+}
+
+// Ensure a unique, sparse index is created. This does not create in the background. This does
+// NOT drop duplicates if they exist. Duplicates will cause an error.
+func (self *DataSource) EnsureUniqueSparseIndex(fields []string) error {
+	return self.Collection().EnsureIndex(mgo.Index{
+		Key: fields,
+		Unique: true,
+		DropDups: false,
+		Background: false,
+		Sparse: true,
+	})
+}
+
 // Returns the collection from the session.
 func (self *DataSource) Collection() *mgo.Collection { return self.Mongo.Collection(self.DbName, self.CollectionName) }
 
