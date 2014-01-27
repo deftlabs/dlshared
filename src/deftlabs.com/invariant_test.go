@@ -32,3 +32,21 @@ func TestSlices(t *testing.T) {
 	}
 }
 
+// Confirm the way maps behave.
+func TestMaps(t *testing.T) {
+
+	mapTest := make(map[string]string)
+	mapTest["one"] = "one"
+	mapTest["two"] = "two"
+	mapTest["three"] = "three"
+
+	if _, found := mapTest["four"]; found {
+		t.Errorf("TestMaps is broken - something found that does not exist")
+	}
+
+	if _, found := mapTest["one"]; !found {
+		t.Errorf("TestMaps is broken - something not found that should be found")
+	}
+
+}
+
