@@ -17,12 +17,13 @@
 package deftlabskernel
 
 import (
-	"fmt"
 	"os"
-	"os/signal"
-	"syscall"
-	"math/rand"
+	"fmt"
 	"time"
+	"reflect"
+	"syscall"
+	"os/signal"
+	"math/rand"
 	"deftlabs.com/log"
 )
 
@@ -37,22 +38,11 @@ type Kernel struct {
 type Component struct {
 	componentId string
 	singleton interface{}
-	startFunction StartStopFunction
-	stopFunction StartStopFunction
+	startMethodName string
+	stopMethodName string
 }
 
-type StartStopFunction func(kernel *Kernel) error
-
-// Register a component with a start and stop functions.
-func (self *Kernel) AddComponentWithStartStopFunctions(componentId string, singleton interface{}, startFunction StartStopFunction, stopFunction StartStopFunction) {
-
-	component := Component{ componentId : componentId, singleton : singleton, startFunction : startFunction, stopFunction : stopFunction }
-
-	self.components = append(self.components , component)
-	self.Components[componentId] = component
-}
-
-// Access another component. This function will panic if you attempt to reference a
+// Access another component. This method will panic if you attempt to reference a
 // non-existent component. If the component id has a length of zero, it is also panics.
 func (self *Kernel) GetComponent(componentId string) interface{} {
 
@@ -68,35 +58,72 @@ func (self *Kernel) GetComponent(componentId string) interface{} {
 	return self.Components[componentId].singleton.(interface{})
 }
 
-// Register a component with a start function.
-func (self *Kernel) AddComponentWithStartFunction(componentId string, singleton interface{}, startFunction StartStopFunction) {
-	self.AddComponentWithStartStopFunctions(componentId, singleton, startFunction, nil)
+// Register a component with a start and stop methods.
+func (self *Kernel) AddComponentWithStartStopMethods(componentId string, singleton interface{}, startMethodName, stopMethodName string) {
+
+	component := Component{ componentId : componentId, singleton : singleton, startMethodName : startMethodName, stopMethodName : stopMethodName }
+
+	self.components = append(self.components , component)
+	self.Components[componentId] = component
 }
 
-// Register a component with a stop function.
-func (self *Kernel) AddComponentWithStopFunction(componentId string, singleton interface{}, stopFunction StartStopFunction) {
-	self.AddComponentWithStartStopFunctions(componentId, singleton, nil, stopFunction)
+
+// Register a component with a start method.
+func (self *Kernel) AddComponentWithStartMethod(componentId string, singleton interface{}, startMethodName string) {
+	self.AddComponentWithStartStopMethods(componentId, singleton, startMethodName, "")
 }
 
-// Register a component without a start or stop function..
+// Register a component with a stop method.
+func (self *Kernel) AddComponentWithStopMethod(componentId string, singleton interface{}, stopMethodName string) {
+	self.AddComponentWithStartStopMethods(componentId, singleton, "", stopMethodName)
+}
+
+// Register a component without a start or stop method.
 func (self *Kernel) AddComponent(componentId string, singleton interface{}) {
-	self.AddComponentWithStartStopFunctions(componentId, singleton, nil, nil)
+	self.AddComponentWithStartStopMethods(componentId, singleton, "", "")
 }
 
-// Stop the kernel. Call this before exiting.
-func (self *Kernel) Stop() error {
+// Called by the kernel during Start/Stop.
+func callStartStopMethod(methodTypeName, methodName string, singleton interface{}, kernel *Kernel) error {
 
-	self.Logf(slogger.Info, "Stopping %s server - version: %s - config file %s", self.Id, self.Configuration.Version, self.Configuration.FileName)
+	value := reflect.ValueOf(singleton)
 
-	for i := len(self.components)-1 ; i >= 0 ; i-- {
-		if self.components[i].stopFunction != nil {
-			if  err := self.components[i].stopFunction(self); err != nil {
-				return err
-			}
-		}
+	methodValue := value.MethodByName(methodName)
+
+	if !methodValue.IsValid() {
+		return fmt.Errorf("Start method: %s is NOT found on struct: %s", methodName, value.Type())
 	}
 
-	self.Logf(slogger.Info, "Stopped %s server - version: %s - config file: %s", self.Id, self.Configuration.Version, self.Configuration.FileName)
+	methodType := methodValue.Type()
+
+	if methodType.NumOut() > 1 {
+		panic(fmt.Sprintf("The %s method: %s on struct: %s has more than one return value - you can only return error or nothing", methodTypeName, methodName, value.Type()))
+	}
+
+	if methodType.NumIn() > 1 {
+		return fmt.Errorf("The %s method: %s on struct: %s has more than one parameter - you can only accept Kernel or nothing", methodTypeName, methodName, value.Type())
+	}
+
+	// Verify the return type is error
+	if methodType.NumOut() == 1 && methodType.Out(0).Name() != "error"  {
+
+		return fmt.Errorf("The %s method: %s on struct: %s has an invalid return type - you can return nothing or error", methodTypeName, methodName, value.Type())
+	}
+
+	methodInputs := make([]reflect.Value, 0)
+	if methodType.NumIn() == 1 {
+		methodInputs = append(methodInputs, reflect.ValueOf(kernel))
+	}
+
+	returnValues := methodValue.Call(methodInputs)
+
+	// Check to see if there was an error
+	if len(returnValues) == 1 {
+		err := returnValues[0].Interface()
+		if err != nil {
+			return err.(error)
+		}
+	}
 
 	return nil
 }
@@ -109,14 +136,33 @@ func (self *Kernel) Start() error {
 	self.Logf(slogger.Info, "Starting %s server - version: %s - config file: %s", self.Id, self.Configuration.Version, self.Configuration.FileName)
 
 	for i := range self.components {
-		if self.components[i].startFunction != nil {
-			if  err := self.components[i].startFunction(self); err != nil {
+		if len(self.components[i].startMethodName) > 0 {
+			if err := callStartStopMethod("start", self.components[i].startMethodName, self.components[i].singleton, self); err != nil {
 				return err
 			}
 		}
 	}
 
 	self.Logf(slogger.Info, "Started %s server - version: %s - config file: %s ", self.Id, self.Configuration.Version, self.Configuration.FileName)
+
+	return nil
+}
+
+// Stop the kernel. Call this before exiting.
+func (self *Kernel) Stop() error {
+
+	self.Logf(slogger.Info, "Stopping %s server - version: %s - config file %s", self.Id, self.Configuration.Version, self.Configuration.FileName)
+
+	for i := len(self.components)-1 ; i >= 0 ; i-- {
+
+		if len(self.components[i].stopMethodName) > 0 {
+			if err := callStartStopMethod("stop", self.components[i].stopMethodName, self.components[i].singleton, self); err != nil {
+				return err
+			}
+		}
+	}
+
+	self.Logf(slogger.Info, "Stopped %s server - version: %s - config file: %s", self.Id, self.Configuration.Version, self.Configuration.FileName)
 
 	return nil
 }
