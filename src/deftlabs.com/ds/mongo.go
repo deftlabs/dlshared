@@ -17,7 +17,7 @@ import (
 // mongodb: {
 //     configDb: {
 //         mongoUrl: "mongodb://localhost:27017/test",
-//         safeMode: 0,
+//         mode: 0,
 //         dialTimeoutInMs: 3000,
 //         socketTimeoutInMs: 3000,
 //         syncTimeoutInMs: 3000,
@@ -45,7 +45,7 @@ func NewMongoFromConfigPath(componentId, configPath string) *Mongo {
 }
 
 // Create a new Mongo component. This method will panic if either of the params are nil or len == 0.
-func NewMongo(componentId, mongoUrl string, safeMode, dialTimeoutInMs, socketTimeoutInMs, syncTimeoutInMs, cursorTimeoutInMs int) *Mongo {
+func NewMongo(componentId, mongoUrl string, mode, dialTimeoutInMs, socketTimeoutInMs, syncTimeoutInMs, cursorTimeoutInMs int) *Mongo {
 
 	if len(componentId) == 0 {
 		panic("When calling NewMongo you must pass in a non-empty component id")
@@ -58,7 +58,7 @@ func NewMongo(componentId, mongoUrl string, safeMode, dialTimeoutInMs, socketTim
 	return &Mongo{
 		componentId : componentId,
 		mongoUrl: mongoUrl,
-		safeMode : safeMode,
+		mode : mode,
 		dialTimeoutInMs : dialTimeoutInMs,
 		socketTimeoutInMs : socketTimeoutInMs,
 		syncTimeoutInMs : syncTimeoutInMs,
@@ -74,7 +74,7 @@ type Mongo struct {
 
 	componentId string
 	mongoUrl string
-	safeMode int
+	mode int
 	dialTimeoutInMs int
 	socketTimeoutInMs int
 	syncTimeoutInMs int
@@ -106,7 +106,7 @@ func (self *Mongo) Start(kernel *deftlabskernel.Kernel) error {
 	// This is a configuration based creation. Load the config data first.
 	if len(self.configPath) > 0 {
 		self.mongoUrl = self.kernel.Configuration.String(fmt.Sprintf("%s.%s", self.configPath, "mongoUrl"), "")
-		self.safeMode = self.kernel.Configuration.Int(fmt.Sprintf("%s.%s", self.configPath, "safeMode"), -1)
+		self.mode = self.kernel.Configuration.Int(fmt.Sprintf("%s.%s", self.configPath, "mode"), -1)
 		self.dialTimeoutInMs = self.kernel.Configuration.Int(fmt.Sprintf("%s.%s", self.configPath, "dialTimeoutInMs"), -1)
 		self.socketTimeoutInMs = self.kernel.Configuration.Int(fmt.Sprintf("%s.%s", self.configPath, "socketTimeoutInMs"), -1)
 		self.syncTimeoutInMs = self.kernel.Configuration.Int(fmt.Sprintf("%s.%s", self.configPath, "syncTimeoutInMs"), -1)
@@ -134,8 +134,8 @@ func (self *Mongo) Start(kernel *deftlabskernel.Kernel) error {
 		panic(fmt.Sprintf("In Mongo - cursorTimeoutInMs is invalid - value: %d - componentId: %s", self.cursorTimeoutInMs, self.componentId))
 	}
 
-	if self.safeMode < 0  || self.safeMode > 2 {
-		panic(fmt.Sprintf("In Mongo - safeMode is invalid - value: %d - componentId: %s", self.safeMode, self.componentId))
+	if self.mode < 0  || self.mode > 2 {
+		panic(fmt.Sprintf("In Mongo - mode is invalid - value: %d - componentId: %s", self.mode, self.componentId))
 	}
 
 	// Create the session.
@@ -144,7 +144,7 @@ func (self *Mongo) Start(kernel *deftlabskernel.Kernel) error {
 	}
 
 	// This is annoying, but mgo defines these constants as the restricted "mode" type.
-	switch self.safeMode {
+	switch self.mode {
 		case 0: self.session.SetMode(mgo.Eventual, true)
 		case 1: self.session.SetMode(mgo.Monotonic, true)
 		case 2: self.session.SetMode(mgo.Strong, true)
