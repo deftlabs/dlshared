@@ -17,6 +17,7 @@
 package deftlabskernel
 
 import (
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -27,7 +28,7 @@ import (
 
 type Kernel struct {
 	Configuration *Configuration
-	Components map[string]interface{}
+	Components map[string]Component
 	components []Component
 	Id string
 	slogger.Logger
@@ -48,7 +49,23 @@ func (self *Kernel) AddComponentWithStartStopFunctions(componentId string, singl
 	component := Component{ componentId : componentId, singleton : singleton, startFunction : startFunction, stopFunction : stopFunction }
 
 	self.components = append(self.components , component)
-	self.Components[componentId] = singleton
+	self.Components[componentId] = component
+}
+
+// Access another component. This function will panic if you attempt to reference a
+// non-existent component. If the component id has a length of zero, it is also panics.
+func (self *Kernel) GetComponent(componentId string) interface{} {
+
+	if len(componentId) == 0 {
+		panic("kernel.GetComponent called with an empty component id")
+	}
+
+	if _, found := self.Components[componentId]; !found {
+		panic(fmt.Sprintf("kernel.GetComponent called with an invalid component id: %s", componentId))
+	}
+
+
+	return self.Components[componentId].singleton.(interface{})
 }
 
 // Register a component with a start function.
@@ -120,7 +137,7 @@ func newKernel(id, configFileName string) (*Kernel, error) {
 		},
 	}
 
-	kernel := &Kernel{ Components : make(map[string]interface{}), Configuration : conf }
+	kernel := &Kernel{ Components : make(map[string]Component), Configuration : conf }
 	kernel.Logger = logger
 	kernel.Id = id
 
