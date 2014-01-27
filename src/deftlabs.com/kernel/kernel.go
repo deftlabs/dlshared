@@ -54,7 +54,6 @@ func (self *Kernel) GetComponent(componentId string) interface{} {
 		panic(fmt.Sprintf("kernel.GetComponent called with an invalid component id: %s", componentId))
 	}
 
-
 	return self.Components[componentId].singleton.(interface{})
 }
 
