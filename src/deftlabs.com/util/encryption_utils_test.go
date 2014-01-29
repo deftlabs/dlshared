@@ -23,7 +23,7 @@ func TestPasswordMatchesHash(t *testing.T) {
 	hashedPassword, err := HashPassword("test", 4)
 
 	if err != nil {
-		t.Errorf("PasswordMatchesHash is broken - error from HashPassword", err)
+		t.Errorf("PasswordMatchesHash is broken - error from HashPassword: %v", err)
 	}
 
 	matches, err := PasswordMatchesHash(hashedPassword, "test")
@@ -41,7 +41,7 @@ func TestPasswordMatchesHash(t *testing.T) {
 	matches, err = PasswordMatchesHash(testHashedPassword, "test")
 
 	if err != nil {
-		t.Errorf("PasswordMatchesHash is broken - error returned", err)
+		t.Errorf("PasswordMatchesHash is broken - error returned: %v", err)
 	}
 
 	if !matches {
@@ -52,25 +52,25 @@ func TestPasswordMatchesHash(t *testing.T) {
 func TestHashPassword(t *testing.T) {
 
 	if _, err := HashPassword("test", 4); err != nil {
-		t.Errorf("EncryptPassword is broken - basic encrypt", err)
+		t.Errorf("EncryptPassword is broken - basic encrypt: %v", err)
 	}
 
 	if _, err := HashPassword("test", 99); err == nil {
-		t.Errorf("EncryptPassword is broken - max cost", err)
+		t.Errorf("EncryptPassword is broken - max cost")
 	}
 
 	if _, err := HashPassword("test", -1); err != nil {
-		t.Errorf("EncryptPassword is broken", err)
+		t.Errorf("EncryptPassword is broken: %v", err)
 	}
 
 	hashedPassword, err := HashPassword("testamuchlongerpasswordsomethingpeoplewoulduse", 4)
 
 	if err != nil {
-		t.Errorf("EncryptPassword is broken - encrypt", err)
+		t.Errorf("EncryptPassword is broken - encrypt: %v", err)
 	}
 
 	if hashedPassword == nil || len(hashedPassword) == 0 {
-		t.Errorf("EncryptPassword is broken - invalid value retruned", err)
+		t.Errorf("EncryptPassword is broken - invalid value retruned")
 	}
 }
 

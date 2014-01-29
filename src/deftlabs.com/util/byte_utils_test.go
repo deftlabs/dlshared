@@ -31,7 +31,7 @@ func TestExtractUInt32(t *testing.T) {
 	var value uint32 = 4294967295
 
 	if err := binary.Write(buf, binary.LittleEndian, value); err != nil {
-		t.Errorf("binary.Write failed:", err)
+		t.Errorf("binary.Write failed: %v", err)
 	}
 
 	raw := buf.Bytes()
@@ -54,7 +54,7 @@ func TestExtractUInt16(t *testing.T) {
 	var value uint16 = 65535
 
 	if err := binary.Write(buf, binary.LittleEndian, value); err != nil {
-		t.Errorf("binary.Write failed:", err)
+		t.Errorf("binary.Write failed: %v", err)
 	}
 
 	raw := buf.Bytes()

@@ -31,7 +31,7 @@ func TestCmdExecWithMaxTimeNoWait(t *testing.T) {
 	var stderr bytes.Buffer
 
 	if killed, err := CmdExecWithMaxTime("uptime", 1000, &stdout, &stderr); err != nil || killed {
-		t.Errorf("CmdExecWithMaxTime is broken", err)
+		t.Errorf("CmdExecWithMaxTime is broken: %v", err)
 	}
 
 	if stdout.Len() <= 0 {
@@ -49,7 +49,7 @@ func TestCmdExecWithMaxTimeWithWait(t *testing.T) {
 	var stderr bytes.Buffer
 
 	if killed, err := CmdExecWithMaxTime("../../../test/exec_test.sh", 250, &stdout, &stderr); err != nil || !killed {
-		t.Errorf("CmdExecWithMaxTime is broken", err)
+		t.Errorf("CmdExecWithMaxTime is broken: %v", err)
 	}
 
 	if stdout.Len() <= 0 {
@@ -67,7 +67,7 @@ func TestCmdExecWithMaxTimeWithBwmNg(t *testing.T) {
 	var stderr bytes.Buffer
 
 	if killed, err := CmdExecWithMaxTime("bwm-ng", 250, &stdout, &stderr); err != nil || !killed {
-		t.Errorf("CmdExecWithMaxTime is broken", err)
+		t.Errorf("CmdExecWithMaxTime is broken %v", err)
 	}
 
 	if stdout.Len() <= 0 {
@@ -85,7 +85,7 @@ func TestCmdExecWithMaxTimeWithCat(t *testing.T) {
 	var stderr bytes.Buffer
 
 	if killed, err := CmdExecWithMaxTime("cat", 250, &stdout, &stderr, "/dev/urandom"); err != nil || !killed {
-		t.Errorf("CmdExecWithMaxTime is broken", err)
+		t.Errorf("CmdExecWithMaxTime is broken: %v", err)
 	}
 
 	if stdout.Len() <= 0 {

@@ -36,7 +36,7 @@ func TestEncodeStrToBase64(t *testing.T) {
 	decoded, err := DecodeBase64ToStr("dHJ5IHRoaXMgZXhhbXBsZQ==")
 
 	if err != nil {
-		t.Errorf("EncodeStrToBase64 is broken - DecodeBase64ToStr return an error", err)
+		t.Errorf("EncodeStrToBase64 is broken - DecodeBase64ToStr return an error: %v", err)
 	}
 
 	if decoded != test {
