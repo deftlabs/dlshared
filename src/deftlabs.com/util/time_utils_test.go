@@ -16,11 +16,29 @@
 
 package deftlabsutil
 
-import "testing"
+import (
+	"time"
+	"testing"
+)
+
+func TestTimeToMillis(t *testing.T) {
+	location, err := time.LoadLocation("UTC")
+
+	if err != nil {
+		t.Errorf("TestTimeToMillis is broken - load location error: %v", err)
+	}
+
+	tv := time.Date(2014, 1, 29, 14, 14, 32, 0, location)
+	millis := TimeToMillis(&tv)
+
+	if millis !=  1391004872000 {
+		t.Errorf("TestTimeToMillis is broken - expected millis: 1391004872000 - received:  %d", millis)
+	}
+}
 
 func TestNowTimeUnixStr(t *testing.T) {
 	if str := NowTimeUnixStr(); len(str) == 0 {
-		t.Errorf("NowTimeUnixStr is broken")
+		t.Errorf("NowTimeUnixStr is broken - result is empty")
 	}
 }
 
