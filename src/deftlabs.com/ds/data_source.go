@@ -30,10 +30,20 @@ func (self *DataSource) InsertSafe(doc interface{}, safeMode *mgo.Safe) error {
 	return session.DB(self.DbName).C(self.CollectionName).Insert(doc)
 }
 
-// Finds one document or returns nil. If the document is not found an error of type mgo.ErrNotFound is
-// returned. The result must be a pointer.
-func (self *DataSource) FindOne(query *bson.M, result interface{}) error {
-	return self.Collection().Find(query).One(result)
+// Finds one document or returns nil. If the document is not found the two return values are nil. This
+// method takes the result param and returns it if found (nil otherwise).
+func (self *DataSource) FindOne(query *bson.M, result interface{}) (interface{}, error) {
+	err := self.Collection().Find(query).One(result)
+
+	if err != nil && err == mgo.ErrNotFound {
+		return nil, nil
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
 
 // Delete one or more documents from the collection. If the document(s) is/are not found, no error
