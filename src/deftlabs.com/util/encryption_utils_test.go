@@ -26,13 +26,25 @@ func TestPasswordMatchesHash(t *testing.T) {
 		t.Errorf("PasswordMatchesHash is broken - error from HashPassword", err)
 	}
 
-	if !PasswordMatchesHash(hashedPassword, "test") {
-		t.Errorf("PasswordMatchesHash is broken - error from HashPassword")
+	matches, err := PasswordMatchesHash(hashedPassword, "test")
+
+	if err != nil {
+		t.Errorf("PasswordMatchesHash is broken - error returned", err)
 	}
 
-	testHashedPassword:= []byte("$2a$04$BBN.CGtEMXLF/S.YRN/Qiuanib4nFztcfF9xlHDYpjcLn4RjHf6x2")
+	if !matches {
+		t.Errorf("PasswordMatchesHash is broken - stored value did not match")
+	}
 
-	if !PasswordMatchesHash(testHashedPassword, "test") {
+	testHashedPassword := []byte("$2a$04$BBN.CGtEMXLF/S.YRN/Qiuanib4nFztcfF9xlHDYpjcLn4RjHf6x2")
+
+	matches, err = PasswordMatchesHash(testHashedPassword, "test")
+
+	if err != nil {
+		t.Errorf("PasswordMatchesHash is broken - error returned", err)
+	}
+
+	if !matches {
 		t.Errorf("PasswordMatchesHash is broken - stored value did not match")
 	}
 }

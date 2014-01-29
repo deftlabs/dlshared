@@ -17,33 +17,34 @@
 package deftlabsutil
 
 import (
+	"deftlabs.com/log"
 	"code.google.com/p/go.crypto/bcrypt"
 )
 
 // Encrypt a password. The cost option is 4 - 31. If the cost is above 31,
 // then an error is displayed. If the cost is below four, then four is used. If a
-// nil or empty password is passed, this method panics.
+// nil or empty password is passed, this method returns an error.
 func HashPassword(password string, cost int) ([]byte, error) {
 	if len(password) == 0 {
-		panic("HashPassword - empty password passed")
+		return nil, slogger.NewStackError("You must pass in a non-empty password")
 	}
 
 	return bcrypt.GenerateFromPassword([]byte(password), cost)
 }
 
 // Check to see if the password is the same as the hashed value. If the values match,
-// true is returned. If a nil or empty password or hash is passed, this method panics.
-func PasswordMatchesHash(hashedPassword []byte, password string) bool {
+// true is returned. If a nil or empty password or hash is passed, this method returns an error.
+func PasswordMatchesHash(hashedPassword []byte, password string) (bool, error) {
 
 	if len(password) == 0 {
-		panic("PasswordMatchesHash - empty password passed")
+		return false, slogger.NewStackError("You must pass in a non-empty password")
 	}
 
 	if len(hashedPassword) == 0 {
-		panic("PasswordMatchesHash - empty password hash passed")
+		return false, slogger.NewStackError("You must pass in a non-empty hashed password")
 	}
 
 	err := bcrypt.CompareHashAndPassword(hashedPassword, []byte(password))
-	return err == nil
+	return err == nil, nil
 }
 
