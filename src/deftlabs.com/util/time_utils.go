@@ -21,6 +21,11 @@ import (
 	"syscall"
 )
 
+// Convert a time struct to milliseconds since epoch.
+func TimeToMillis(tv *time.Time) int64 {
+	return tv.UnixNano() / 1e6
+}
+
 // Get the current time in millis since epoch. Source from stackoverflow:
 // http://stackoverflow.com/questions/6161839/go-time-milliseconds
 func CurrentTimeInMillis() int64 {
