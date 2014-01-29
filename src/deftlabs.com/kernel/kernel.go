@@ -132,7 +132,7 @@ func (self *Kernel) Start() error {
 
 	rand.Seed(time.Now().UTC().UnixNano())
 
-	self.Logf(slogger.Info, "Starting %s server - version: %s - config file: %s", self.Id, self.Configuration.Version, self.Configuration.FileName)
+	self.Logf(slogger.Info, "Starting %s - version: %s - config file: %s", self.Id, self.Configuration.Version, self.Configuration.FileName)
 
 	for i := range self.components {
 		if len(self.components[i].startMethodName) > 0 {
@@ -142,7 +142,7 @@ func (self *Kernel) Start() error {
 		}
 	}
 
-	self.Logf(slogger.Info, "Started %s server - version: %s - config file: %s ", self.Id, self.Configuration.Version, self.Configuration.FileName)
+	self.Logf(slogger.Info, "Started %s - version: %s - config file: %s ", self.Id, self.Configuration.Version, self.Configuration.FileName)
 
 	return nil
 }
@@ -150,7 +150,7 @@ func (self *Kernel) Start() error {
 // Stop the kernel. Call this before exiting.
 func (self *Kernel) Stop() error {
 
-	self.Logf(slogger.Info, "Stopping %s server - version: %s - config file %s", self.Id, self.Configuration.Version, self.Configuration.FileName)
+	self.Logf(slogger.Info, "Stopping %s - version: %s - config file %s", self.Id, self.Configuration.Version, self.Configuration.FileName)
 
 	for i := len(self.components)-1 ; i >= 0 ; i-- {
 
@@ -161,7 +161,7 @@ func (self *Kernel) Stop() error {
 		}
 	}
 
-	self.Logf(slogger.Info, "Stopped %s server - version: %s - config file: %s", self.Id, self.Configuration.Version, self.Configuration.FileName)
+	self.Logf(slogger.Info, "Stopped %s - version: %s - config file: %s", self.Id, self.Configuration.Version, self.Configuration.FileName)
 
 	return nil
 }
