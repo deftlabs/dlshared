@@ -90,7 +90,8 @@ func NewConsumer(	name string,
 		receiveChannel: receiveChannel,
 		processorChannel: make(chan interface{}, channelBufferSize),
 		quitChannel: make(chan bool),
-		processedChannel: make(chan bool),
+		processedChannel: make(chan bool, maxGoroutines),
+		maxGoroutines: maxGoroutines,
 		maxWaitOnStopInMs: int64(maxWaitOnStopInMs),
 		waitGroup: new(sync.WaitGroup),
 	}
@@ -117,8 +118,10 @@ func (self *Consumer) listenForMsgs() {
         select {
 			case msg := <- self.receiveChannel:
 				if msgsBeingProcessed <= self.maxGoroutines {
+
 					self.processorChannel <- msg
 					msgsBeingProcessed++
+
 				} else {
 					if self.spilloverFunc == nil {
 						self.logger.Logf(slogger.Warn, "Max concurrent messages (%d) reached in consumer: %s - dropping data (no spillover func set)", self.maxGoroutines, self.name)
