@@ -31,19 +31,5 @@ func TestLoadConfiguration(t *testing.T) {
 		t.Errorf("Configuration server.http.port is broken - expected 9999 - received: %d", configuration.Int("server.http.port", 0))
 		return
 	}
-
-	/*
-	if appConfiguration.SocketTimeout != 40 {
-
-	}
-
-	if appConfiguration.LdapServerPort != 3890 {
-		t.Errorf("LdapServerPort expected: %d - received: %d", 3890, appConfiguration.LdapServerPort)
-	}
-
-	if appConfiguration.LdapServerBindAddr != "127.0.0.1" {
-		t.Errorf("LdapServerBindAddr expected: %s - received: %s", "127.0.0.1", appConfiguration.LdapServerBindAddr)
-	}
-	*/
 }
 
