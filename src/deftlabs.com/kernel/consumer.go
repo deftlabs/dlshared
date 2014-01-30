@@ -133,7 +133,7 @@ func (self *Consumer) listenForMsgs() {
     }
 }
 
-func (self *Consumer) Start() {
+func (self *Consumer) Start() error {
 
 	// Create the goroutine pool
 	for idx := 0; idx < self.maxGoroutines; idx++ {
@@ -145,11 +145,12 @@ func (self *Consumer) Start() {
 	self.waitGroup.Add(1)
 	go self.listenForMsgs()
 
+	return nil
 }
 
 // This method will block until all goroutines exit. It is up to the
 // caller to clear the receiveChannel.
-func (self *Consumer) Stop() {
+func (self *Consumer) Stop() error {
 
 	// Exit the listen for events select
 	self.quitChannel <- true
@@ -159,7 +160,7 @@ func (self *Consumer) Stop() {
 	if cap(self.processorChannel) == 0 {
 		close(self.processorChannel)
 		self.waitGroup.Wait()
-		return
+		return nil
 	}
 
 	// This is a buffered channel so we need to wait until the channel
@@ -183,5 +184,7 @@ func (self *Consumer) Stop() {
 	// Close the processor channel and wait for all of the goroutines to return
 	close(self.processorChannel)
 	self.waitGroup.Wait()
+
+	return nil
 }
 
