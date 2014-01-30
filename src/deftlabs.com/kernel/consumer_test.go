@@ -16,11 +16,65 @@
 
 package deftlabskernel
 
-import "testing"
+import (
+	"testing"
+	"deftlabs.com/log"
+)
 
-func TestConsumer(t *testing.T) {
+func TestConsumer1(t *testing.T) {
 
-	//t.Errorf("NewConfiguration is broken: %v", err)
+	receiveChannel := make(chan interface{})
 
+	consumer := NewConsumer("TestConsumer1",
+							receiveChannel,
+							func(msg interface{}) { },
+							func(msg interface{}) {
+								t.Errorf("TestConsumer1 is broken - spillover called")
+							},
+							10,
+							0,
+							0,
+							slogger.Logger{})
+
+	if err := consumer.Start(); err != nil {
+		t.Errorf("TestConsumer1 Start is broken: %v", err)
+	}
+
+	for idx := 0; idx < 10000; idx++ {
+		receiveChannel <- "test"
+	}
+
+	if err := consumer.Stop(); err != nil {
+		t.Errorf("TestConsumer1 Stop is broken: %v", err)
+	}
 }
+
+func TestConsumer2(t *testing.T) {
+
+	receiveChannel := make(chan interface{})
+
+	consumer := NewConsumer("TestConsumer2",
+							receiveChannel,
+							func(msg interface{}) { },
+							func(msg interface{}) {
+								t.Errorf("TestConsumer2 is broken - spillover called")
+							},
+							10,
+							100,
+							0,
+							slogger.Logger{})
+
+	if err := consumer.Start(); err != nil {
+		t.Errorf("TestConsumer2 Start is broken: %v", err)
+	}
+
+	for idx := 0; idx < 10000; idx++ {
+		receiveChannel <- "test"
+	}
+
+	if err := consumer.Stop(); err != nil {
+		t.Errorf("TestConsumer2 Stop is broken: %v", err)
+	}
+}
+
 
