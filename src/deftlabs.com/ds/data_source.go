@@ -32,6 +32,12 @@ type DataSource struct {
 // Insert a document into a collection with the base configured write concern.
 func (self *DataSource) Insert(doc interface{}) error { return self.Mongo.Collection(self.DbName, self.CollectionName).Insert(doc) }
 
+// Upsert a document in a collection with the base configured write concern.
+func (self *DataSource) Upsert(selector interface{}, change interface{}) error {
+	_, err := self.Mongo.Collection(self.DbName, self.CollectionName).Upsert(selector, change)
+	return err
+}
+
 // Insert a document into a collection with the passed write concern.
 func (self *DataSource) InsertSafe(doc interface{}, safeMode *mgo.Safe) error {
 	session := self.SessionClone()
