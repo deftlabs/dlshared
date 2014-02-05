@@ -19,9 +19,6 @@ SHELL := /bin/bash
 compile:
 	@go build
 
-clean:
-	@rm -Rf pkg
-
 test: compile
 	@go test
 
