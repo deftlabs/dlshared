@@ -28,3 +28,4 @@ initlibs:
 	@go get github.com/daviddengcn/go-ljson-conf
 	@go get github.com/gorilla/mux
 	@go get code.google.com/p/go.crypto/bcrypt
+
