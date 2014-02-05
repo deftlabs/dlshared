@@ -48,7 +48,7 @@ func TestCmdExecWithMaxTimeWithWait(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	if killed, err := CmdExecWithMaxTime("../../../test/exec_test.sh", 250, &stdout, &stderr); err != nil || !killed {
+	if killed, err := CmdExecWithMaxTime("test/exec_test.sh", 250, &stdout, &stderr); err != nil || !killed {
 		t.Errorf("CmdExecWithMaxTime is broken: %v", err)
 	}
 
