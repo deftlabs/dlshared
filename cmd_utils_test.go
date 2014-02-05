@@ -61,6 +61,7 @@ func TestCmdExecWithMaxTimeWithWait(t *testing.T) {
 	}
 }
 
+/*
 func TestCmdExecWithMaxTimeWithBwmNg(t *testing.T) {
 
 	var stdout bytes.Buffer
@@ -78,6 +79,7 @@ func TestCmdExecWithMaxTimeWithBwmNg(t *testing.T) {
 		t.Errorf("CmdExecWithMaxTime is broken - data in stderr")
 	}
 }
+*/
 
 func TestCmdExecWithMaxTimeWithCat(t *testing.T) {
 
