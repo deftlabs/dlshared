@@ -17,22 +17,22 @@
 SHELL := /bin/bash
 
 compile:
-	@cd src/deftlabs.com/golang-shared/util; go build
-	@cd src/deftlabs.com/golang-shared/ds; go build
-	@cd src/deftlabs.com/golang-shared/log; go build
-	@cd src/deftlabs.com/golang-shared/kernel; go build
-	@cd src/deftlabs.com/golang-shared/net/http; go build
+	@cd src/github.com/deftlabs/golang-shared/util; go build
+	@cd src/github.com/deftlabs/golang-shared/ds; go build
+	@cd src/github.com/deftlabs/golang-shared/log; go build
+	@cd src/github.com/deftlabs/golang-shared/kernel; go build
+	@cd src/github.com/deftlabs/golang-shared/net/http; go build
 
 clean:
 	@rm -Rf bin
 	@rm -Rf pkg
 
 test: compile
-	@cd src/deftlabs.com/golang-shared; go test
-	@cd src/deftlabs.com/golang-shared/net/http; go test
-	@cd src/deftlabs.com/golang-shared/util; go test
-	@cd src/deftlabs.com/golang-shared/log; go test
-	@cd src/deftlabs.com/golang-shared/kernel; go test
+	@cd src/github.com/deftlabs/golang-shared; go test
+	@cd src/github.com/deftlabs/golang-shared/net/http; go test
+	@cd src/github.com/deftlabs/golang-shared/util; go test
+	@cd src/github.com/deftlabs/golang-shared/log; go test
+	@cd src/github.com/deftlabs/golang-shared/kernel; go test
 
 initlibs:
 	@go get github.com/mreiferson/go-httpclient
