@@ -164,7 +164,7 @@ func TestStacktrace(test *testing.T) {
 
 	stacktrace := NewStackError("").Stacktrace
 
-	if match, _ := regexp.MatchString("^at dev/dlshared/logger_test.go:\\d+", stacktrace[0]); !match {
+	if match, _ := regexp.MatchString("^at .*/logger_test.go:\\d+", stacktrace[0]); !match {
 		test.Errorf("Stacktrace level 0 did not match. Received: %v", stacktrace[0])
 	}
 
