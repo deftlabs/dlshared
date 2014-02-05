@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"crypto/md5"
 	"encoding/base64"
-	"deftlabs.com/log"
+	"deftlabs.com/golang-shared/log"
 )
 
 // Encodes the string to base64. This method panics if the value passed is nil

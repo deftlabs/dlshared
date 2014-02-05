@@ -18,7 +18,7 @@ package deftlabskernel
 
 import (
 	"testing"
-	"deftlabs.com/log"
+	"deftlabs.com/golang-shared/log"
 )
 
 func TestConsumer1(t *testing.T) {

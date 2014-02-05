@@ -163,15 +163,16 @@ func TestStacktrace(test *testing.T) {
 	// runtime/proc.c:1214
 
 	stacktrace := NewStackError("").Stacktrace
-	if match, _ := regexp.MatchString("^at deftlabs.com/log/logger_test.go:\\d+", stacktrace[0]); match == false {
+
+	if match, _ := regexp.MatchString("^at golang-shared/log/logger_test.go:\\d+", stacktrace[0]); !match {
 		test.Errorf("Stacktrace level 0 did not match. Received: %v", stacktrace[0])
 	}
 
-	if match, _ := regexp.MatchString("^at pkg/testing/testing.go:\\d+", stacktrace[1]); match == false {
+	if match, _ := regexp.MatchString("^at pkg/testing/testing.go:\\d+", stacktrace[1]); !match {
 		test.Errorf("Stacktrace level 1 did not match. Received: %v", stacktrace[1])
 	}
 
-	if match, _ := regexp.MatchString("^at pkg/runtime/proc.c:\\d+", stacktrace[2]); match == false {
+	if match, _ := regexp.MatchString("^at pkg/runtime/proc.c:\\d+", stacktrace[2]); !match {
 		test.Errorf("Stacktrace level 2 did not match. Received: %v", stacktrace[2])
 	}
 }
@@ -207,11 +208,11 @@ func TestStackError(test *testing.T) {
 		test.Errorf("Expected output to start with the message. Received:\n%v", str)
 	}
 
-	if match, _ := regexp.MatchString("deftlabs.com/log/logger_test.go:\\d+", str); match == false {
+	if match, _ := regexp.MatchString("golang-shared/log/logger_test.go:\\d+", str); match == false {
 		test.Errorf("Expected to see output for `logger_test.go`. Received:\n%v", str)
 	}
 
-	match, err := regexp.MatchString("deftlabs.com/log/logger.go:\\d+", str)
+	match, err := regexp.MatchString("deftlabs.com/golang-shared/log/logger.go:\\d+", str)
 	if err != nil {
 		test.Errorf("Error matching: %v", err)
 	}

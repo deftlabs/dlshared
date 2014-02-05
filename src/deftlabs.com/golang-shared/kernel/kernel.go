@@ -24,7 +24,7 @@ import (
 	"syscall"
 	"os/signal"
 	"math/rand"
-	"deftlabs.com/log"
+	"deftlabs.com/golang-shared/log"
 )
 
 type Kernel struct {

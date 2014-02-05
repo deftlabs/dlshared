@@ -20,7 +20,7 @@ import "testing"
 
 func TestLoadConfiguration(t *testing.T) {
 
-	configuration, err := NewConfiguration("../../../test/configuration.json")
+	configuration, err := NewConfiguration("../../../../test/configuration.json")
 
 	if err != nil {
 		t.Errorf("NewConfiguration is broken: %v", err)

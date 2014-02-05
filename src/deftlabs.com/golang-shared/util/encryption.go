@@ -17,7 +17,7 @@
 package deftlabsutil
 
 import (
-	"deftlabs.com/log"
+	"deftlabs.com/golang-shared/log"
 	"code.google.com/p/go.crypto/bcrypt"
 )
 

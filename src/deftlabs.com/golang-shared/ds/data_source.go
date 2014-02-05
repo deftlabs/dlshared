@@ -19,7 +19,7 @@ package deftlabsds
 import (
 	"labix.org/v2/mgo"
 	"labix.org/v2/mgo/bson"
-	"deftlabs.com/log"
+	"deftlabs.com/golang-shared/log"
 )
 
 type DataSource struct {

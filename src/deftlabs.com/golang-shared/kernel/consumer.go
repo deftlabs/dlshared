@@ -19,8 +19,8 @@
 import (
 	"sync"
 	"time"
-	"deftlabs.com/log"
-	"deftlabs.com/util"
+	"deftlabs.com/golang-shared/log"
+	"deftlabs.com/golang-shared/util"
 )
 
 // The consumer is a generic component that is meant to be embedded into your applications. It

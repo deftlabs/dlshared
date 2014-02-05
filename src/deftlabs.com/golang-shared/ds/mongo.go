@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"time"
 	"labix.org/v2/mgo"
-	"deftlabs.com/log"
-	"deftlabs.com/kernel"
+	"deftlabs.com/golang-shared/log"
+	"deftlabs.com/golang-shared/kernel"
 )
 
 // Create a new Mongo component from a configuration path. The path passed must be in the following format.

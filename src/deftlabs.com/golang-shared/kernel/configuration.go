@@ -19,7 +19,7 @@ package deftlabskernel
 import (
 	"os"
 	"github.com/daviddengcn/go-ljson-conf"
-	"deftlabs.com/log"
+	"deftlabs.com/golang-shared/log"
 )
 
 type Configuration struct {

@@ -20,9 +20,9 @@ import (
 	"time"
 	"net/http"
 	"github.com/gorilla/mux"
-	"deftlabs.com/log"
-	"deftlabs.com/kernel"
-	"deftlabs.com/util"
+	"deftlabs.com/golang-shared/log"
+	"deftlabs.com/golang-shared/kernel"
+	"deftlabs.com/golang-shared/util"
 )
 
 type HttpServerHandlerDef struct {
