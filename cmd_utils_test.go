@@ -23,14 +23,14 @@ import (
 
 func TestCmdExecWithMaxTimeNoWait(t *testing.T) {
 
-	if killed, err := CmdExecWithMaxTime("uptime", 2000, nil, nil); err != nil || killed {
+	if killed, err := CmdExecWithMaxTime("/usr/bin/uptime", 2000, nil, nil); err != nil || killed {
 		t.Errorf("CmdExecWithMaxTime is broken:", err)
 	}
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	if killed, err := CmdExecWithMaxTime("uptime", 1000, &stdout, &stderr); err != nil || killed {
+	if killed, err := CmdExecWithMaxTime("/usr/bin/uptime", 1000, &stdout, &stderr); err != nil || killed {
 		t.Errorf("CmdExecWithMaxTime is broken: %v", err)
 	}
 
