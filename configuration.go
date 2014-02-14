@@ -24,6 +24,7 @@ import (
 type Configuration struct {
 
 	Version string
+	PidFile string
 
 	Pid int
 
@@ -64,6 +65,12 @@ func NewConfiguration(fileName string) (*Configuration, error) {
 	var err error
 	if conf.data, err = ljconf.Load(fileName); err != nil {
 		return nil, err
+	}
+
+	conf.PidFile = conf.data.String("pidFile", "")
+
+	if len(conf.PidFile) == 0 {
+		return nil, NewStackError("Configuration file error - pidFile not set")
 	}
 
 	conf.Version = conf.data.String("version", "@VERSION@")
