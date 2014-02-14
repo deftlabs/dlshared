@@ -1,11 +1,14 @@
 {
-    server: {
+    "server": {
 
-        http: {
-            port: 9999
-            bindAddress: "127.0.0.1"
+        "http": {
+            "port": "9999",
+            "bindAddress": "127.0.0.1"
         }
-    }
+    },
 
-	version: "0.0.0"
+	"version": "0.0.0",
+
+	"pidFile": "/tmp/dlshared_test.pid"
+
 }
