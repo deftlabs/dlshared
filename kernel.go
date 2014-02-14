@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"time"
 	"reflect"
+	"strconv"
 	"syscall"
 	"os/signal"
 	"math/rand"
@@ -32,6 +33,7 @@ type Kernel struct {
 	components []Component
 	Id string
 	Logger
+	Pid int
 }
 
 type Component struct {
@@ -174,6 +176,8 @@ func newKernel(id, configFileName string) (*Kernel, error) {
 		return nil, err
 	}
 
+	// TODO: Add a logging structure to the configuration file and configure.
+
 	logger := Logger {
 		Prefix: id,
 		Appenders: [] Appender{
@@ -185,7 +189,26 @@ func newKernel(id, configFileName string) (*Kernel, error) {
 	kernel.Logger = logger
 	kernel.Id = id
 
+	if err = writePidFile(kernel); err != nil {
+		return nil, err
+	}
+
 	return kernel, nil
+}
+
+func writePidFile(kernel *Kernel) error {
+	kernel.Pid = os.Getpid()
+	pidFile, err := os.Create(kernel.Configuration.PidFile)
+	if err != nil {
+		return NewStackError("Unable to start kernel - problem creating pid file %s - error: %v", kernel.Configuration.PidFile, err)
+	}
+	defer pidFile.Close()
+
+	if _, err := pidFile.Write([]byte(strconv.Itoa(kernel.Pid))); err != nil {
+		return NewStackError("Unable to start kernel - problem writing pid file %s - error: %v", kernel.Configuration.PidFile, err)
+	}
+
+	return nil
 }
 
 // Call this from your main to create the kernel. After init kernel is called you must add
