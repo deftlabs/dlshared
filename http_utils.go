@@ -36,6 +36,31 @@ const (
 	ContentTypeTextPlain = "text/plain; charset=utf-8"
 )
 
+func HttpPostStr(url string, value string) ([]byte, error) {
+
+	httpClient, httpTransport := getDefaultHttpClient()
+	defer httpTransport.Close()
+
+	request, err := http.NewRequest("POST", url, bytes.NewReader([]byte(value)))
+	if err != nil {
+		return nil, err
+	}
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	response, err := httpClient.Do(request)
+	if err != nil {
+		return nil, err
+	}
+
+	defer response.Body.Close()
+
+	if data, err := ioutil.ReadAll(response.Body); err != nil {
+		return nil, err
+	} else {
+		return data, nil
+	}
+}
+
 func HttpPostJson(url string, value interface{}) ([]byte, error) {
 
 	rawJson, err := json.Marshal(value)
