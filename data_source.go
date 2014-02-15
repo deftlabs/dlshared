@@ -47,6 +47,15 @@ func (self *DataSource) InsertSafe(doc interface{}, safeMode *mgo.Safe) error {
 	return session.DB(self.DbName).C(self.CollectionName).Insert(doc)
 }
 
+// Find by the _id. Returns nil if not found.
+func (self *DataSource) FindById(id interface{}, result interface{}) (interface{}, error) {
+	if doc, err := self.FindOne(&bson.M{ "_id": id }, result); err != nil {
+		return nil, err
+	} else {
+		return doc, nil
+	}
+}
+
 // Finds one document or returns nil. If the document is not found the two return values are nil. This
 // method takes the result param and returns it if found (nil otherwise).
 func (self *DataSource) FindOne(query *bson.M, result interface{}) (interface{}, error) {
