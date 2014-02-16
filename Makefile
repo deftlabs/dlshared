@@ -22,7 +22,7 @@ compile:
 test: compile
 	@go test
 
-initlibs:
+init.libs:
 	@go get github.com/mreiferson/go-httpclient
 	@go get labix.org/v2/mgo
 	@go get github.com/daviddengcn/go-ljson-conf
