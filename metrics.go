@@ -34,14 +34,14 @@ type Metric struct {
 type Metrics struct {
 	sourceName string
 	quitChannel chan bool
-	relayFunc func(string, map[string]Metric)
+	relayFunc func(string, []Metric)
 	relayPeriodInSecs int
 	metricChannel chan *Metric
 	ticker *time.Ticker
 }
 
 func NewMetrics(	sourceName string,
-					relayFunc func(string, map[string]Metric),
+					relayFunc func(string, []Metric),
 					relayPeriodInSecs int,
 					metricQueueLength int) *Metrics {
 
@@ -102,12 +102,12 @@ func (self *Metrics) listenForEvents() {
 				}
 
 			case <- self.ticker.C:
-				metricsToRelay := make(map[string]Metric)
-				for k, v := range metrics {
-					metricsToRelay[k] = Metric{ Name: v.Name, Type: v.Type, Value: v.Value }
+				toRelay := make([]Metric, len(metrics))
+				for _, v := range metrics {
+					toRelay = append(toRelay, Metric{ Name: v.Name, Type: v.Type, Value: v.Value })
 				}
 
-				go self.relayFunc(self.sourceName, metricsToRelay)
+				go self.relayFunc(self.sourceName, toRelay)
 
 			case <- self.quitChannel:
 				self.ticker.Stop()
