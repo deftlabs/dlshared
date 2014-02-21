@@ -131,3 +131,24 @@ func (self *Metrics) Stop() error {
 	return nil
 }
 
+// Pass the logger struct to the log metrics.
+func NewLogMetrics(logger Logger) *LogMetrics {
+	return &LogMetrics{ logger }
+}
+
+// This can be used to print metrics out to a configured logger.
+type LogMetrics struct {
+	Logger
+}
+
+// This logs an info message with the following format: [source: %s - metric: %s - value: %f]
+func (self *LogMetrics) Log(sourceName string, metrics []Metric) {
+	if len(metrics) == 0 {
+		return
+	}
+
+	for i := range metrics {
+		self.Logf(Info, "[source: %s - metric: %s - value: %f]", sourceName, metrics[i].Name, metrics[i].Value)
+	}
+}
+
