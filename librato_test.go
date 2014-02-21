@@ -32,6 +32,10 @@ func TestLibrato(t *testing.T) {
 		t.Errorf("TestLibrato NewLibrato is broken")
 	}
 
+	testUrl = assembleLibratoUrl(LibratoMetricsPostUrl, "", "")
+
+
+
 
 }
 
