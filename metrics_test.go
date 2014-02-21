@@ -25,7 +25,7 @@ func TestMetrics(t *testing.T) {
 
 	relayFuncCallCount := 0
 
-	relayFunc := func(sourceName string, metrics map[string]Metric) {
+	relayFunc := func(sourceName string, metrics []Metric) {
 		relayFuncCallCount++
 	}
 
