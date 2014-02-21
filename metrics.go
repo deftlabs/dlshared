@@ -18,11 +18,16 @@ package dlshared
 
 import "time"
 
+type MetricsRelayFunction func(string, []Metric)
+
 type metricType int8
 
 const (
 	Counter metricType = 0
 	Gauge metricType = 1
+
+	CounterStr = "counter"
+	GaugeStr = "gauge"
 )
 
 type Metric struct {
@@ -34,14 +39,15 @@ type Metric struct {
 type Metrics struct {
 	sourceName string
 	quitChannel chan bool
-	relayFunc func(string, []Metric)
+	relayFunc MetricsRelayFunction
 	relayPeriodInSecs int
 	metricChannel chan *Metric
 	ticker *time.Ticker
 }
 
+// The relay function is only called if there are metrics to relay.
 func NewMetrics(	sourceName string,
-					relayFunc func(string, []Metric),
+					relayFunc MetricsRelayFunction,
 					relayPeriodInSecs int,
 					metricQueueLength int) *Metrics {
 
@@ -107,6 +113,10 @@ func (self *Metrics) listenForEvents() {
 					toRelay = append(toRelay, Metric{ Name: v.Name, Type: v.Type, Value: v.Value })
 				}
 
+				if len(metrics) == 0 {
+					continue
+				}
+
 				go self.relayFunc(self.sourceName, toRelay)
 
 			case <- self.quitChannel:
@@ -141,14 +151,15 @@ type LogMetrics struct {
 	Logger
 }
 
-// This logs an info message with the following format: [source: %s - metric: %s - value: %f]
+// This logs an info message with the following format: [source: %s - type: %s - metric: %s - value: %f]
 func (self *LogMetrics) Log(sourceName string, metrics []Metric) {
-	if len(metrics) == 0 {
-		return
-	}
-
+	var typeStr string
 	for i := range metrics {
-		self.Logf(Info, "[source: %s - metric: %s - value: %f]", sourceName, metrics[i].Name, metrics[i].Value)
+		switch metrics[i].Type {
+			case Counter: typeStr = CounterStr
+			case Gauge: typeStr = GaugeStr
+		}
+		self.Logf(Info, "[source: %s - type: %s - metric: %s - value: %f]", sourceName, typeStr, metrics[i].Name, metrics[i].Value)
 	}
 }
 
