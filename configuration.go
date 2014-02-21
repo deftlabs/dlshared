@@ -30,6 +30,8 @@ type Configuration struct {
 
 	data *ljconf.Conf
 
+	Environment string
+
 	Hostname string
 	FileName string
 }
@@ -73,7 +75,9 @@ func NewConfiguration(fileName string) (*Configuration, error) {
 		return nil, NewStackError("Configuration file error - pidFile not set")
 	}
 
-	conf.Version = conf.data.String("version", "@VERSION@")
+	conf.Environment = conf.data.String("environment", "")
+
+	conf.Version = conf.data.String("version", "")
 
 	conf.Pid = os.Getpid()
 
@@ -82,8 +86,12 @@ func NewConfiguration(fileName string) (*Configuration, error) {
 		return nil, err
 	}
 
-	if len(conf.Version) == 0 || conf.Version == "@VERSION@" {
+	if len(conf.Version) == 0 {
 		return nil, NewStackError("Configuration file error - version not set")
+	}
+
+	if len(conf.Environment) == 0 {
+		return nil, NewStackError("Configuration file error - environment not set")
 	}
 
 	return conf, nil
