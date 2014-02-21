@@ -60,6 +60,10 @@ func (self *Configuration) IntList(key string, def []int) []int {
 	return self.data.IntList(key, def)
 }
 
+func (self *Configuration) EnvironmentIs(expected string) bool {
+	return self.Environment == expected
+}
+
 func NewConfiguration(fileName string) (*Configuration, error) {
 
 	conf := &Configuration{ FileName : fileName }
