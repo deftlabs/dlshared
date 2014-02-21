@@ -27,5 +27,11 @@ func TestLibrato(t *testing.T) {
 	}
 
 	librato := NewLibrato("bill@microsoft.com", "testtoken", Logger{})
+
+	if librato == nil {
+		t.Errorf("TestLibrato NewLibrato is broken")
+	}
+
+
 }
 
