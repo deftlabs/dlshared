@@ -75,7 +75,7 @@ func HttpPostJson(url string, value interface{}) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	request.Header.Set("Content-Type", "application/json")
 
 	response, err := httpClient.Do(request)
 	if err != nil {
