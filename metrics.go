@@ -143,16 +143,30 @@ func (self *Metrics) Stop() error {
 
 // Pass the logger struct to the log metrics.
 func NewLogMetrics(logger Logger) *LogMetrics {
-	return &LogMetrics{ logger }
+	return &LogMetrics{ Logger: logger, enabled: true }
 }
 
 // This can be used to print metrics out to a configured logger.
 type LogMetrics struct {
 	Logger
+	enabled bool
+}
+
+func (self *LogMetrics) Disable() {
+	self.enabled = false
+}
+
+func (self *LogMetrics) Enable() {
+	self.enabled = true
 }
 
 // This logs an info message with the following format: [source: %s - type: %s - metric: %s - value: %f]
 func (self *LogMetrics) Log(sourceName string, metrics []Metric) {
+
+	if !self.enabled {
+		return
+	}
+
 	var typeStr string
 	for i := range metrics {
 		switch metrics[i].Type {
