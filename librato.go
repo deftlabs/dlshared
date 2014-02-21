@@ -51,11 +51,6 @@ type libratoMetric struct {
 
 // This method can be used as the Metrics relay function.
 func (self *Librato) SendMetricsToLibrato(sourceName string, metrics []Metric) {
-
-	if len(metrics) == 0 {
-		return
-	}
-
 	msg := libratoMsg{}
 
 	for i := range metrics {
