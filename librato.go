@@ -53,6 +53,8 @@ type libratoMetric struct {
 func (self *Librato) SendMetricsToLibrato(sourceName string, metrics []Metric) {
 	msg := libratoMsg{}
 
+	self.Logf(Info, "received: %d", len(metrics))
+
 	for i := range metrics {
 		metric := libratoMetric{ Name: metrics[i].Name, Value: metrics[i].Value, Source: sourceName }
 		switch metrics[i].Type {
