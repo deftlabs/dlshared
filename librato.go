@@ -61,6 +61,9 @@ func (self *Librato) SendMetricsToLibrato(sourceName string, metrics []Metric) {
 		}
 	}
 
+	self.Logf(Info, "metrics counters: %d", len(msg.Counters))
+	self.Logf(Info, "metrics gauges: %d", len(msg.Gauges))
+
 	var response []byte
 	var err error
 
