@@ -114,7 +114,7 @@ func (self *Metrics) listenForEvents() {
 
 				counter := 0
 
-				toRelay := make([]Metric, len(metrics), len(metrics))
+				var toRelay []Metric
 				fmt.Println("Slice size before setup:", len(toRelay))
 
 				for _, v := range metrics {
