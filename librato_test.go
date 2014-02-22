@@ -16,7 +16,10 @@
 
 package dlshared
 
-import "testing"
+import(
+	"testing"
+	"encoding/json"
+)
 
 func TestLibrato(t *testing.T) {
 
@@ -33,9 +36,24 @@ func TestLibrato(t *testing.T) {
 	}
 
 	testUrl = assembleLibratoUrl(LibratoMetricsPostUrl, "", "")
+}
 
+func TestLibratoMsgJson(t *testing.T) {
+	msg := libratoMsg{}
 
+	msg.Counters = append(msg.Counters, libratoMetric{ Name: "test", Value: float64(100), Source: "source" })
 
+	msg.Counters = append(msg.Counters, libratoMetric{ Name: "test1", Value: float64(200), Source: "source" })
+
+	rawJson, err := json.Marshal(msg)
+	if err != nil {
+		t.Errorf("TestLibratoMsgJson json marshal is broken - error %v", err)
+	}
+
+	if len(rawJson) == 0 {
+		t.Errorf("TestLibratoMsgJson json marshal is broken - empty json")
+	}
 
 }
+
 
