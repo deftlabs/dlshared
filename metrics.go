@@ -120,6 +120,8 @@ func (self *Metrics) listenForEvents() {
 					toRelay = append(toRelay, Metric{ Name: v.Name, Type: v.Type, Value: v.Value })
 				}
 
+				fmt.Println("Slice size after setup:", len(toRelay))
+
 				if len(toRelay) == 0 {
 					continue
 				}
