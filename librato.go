@@ -58,8 +58,11 @@ func (self *Librato) SendMetricsToLibrato(sourceName string, metrics []Metric) {
 	for i := range metrics {
 		metric := libratoMetric{ Name: metrics[i].Name, Value: metrics[i].Value, Source: sourceName }
 		switch metrics[i].Type {
-			case Counter: msg.Counters = append(msg.Counters, metric)
-			case Gauge: msg.Gauges = append(msg.Gauges, metric)
+			case Counter:
+				fmt.Println("Adding counter")
+				msg.Counters = append(msg.Counters, metric)
+			case Gauge:
+				msg.Gauges = append(msg.Gauges, metric)
 		}
 	}
 
