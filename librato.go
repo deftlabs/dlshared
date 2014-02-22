@@ -53,30 +53,19 @@ type libratoMetric struct {
 func (self *Librato) SendMetricsToLibrato(sourceName string, metrics []Metric) {
 	msg := libratoMsg{}
 
-	self.Logf(Info, "received: %d", len(metrics))
-
 	for i := range metrics {
 		metric := libratoMetric{ Name: metrics[i].Name, Value: metrics[i].Value, Source: sourceName }
 		switch metrics[i].Type {
-			case Counter:
-				fmt.Println("Adding counter")
-				msg.Counters = append(msg.Counters, metric)
-			case Gauge:
-				msg.Gauges = append(msg.Gauges, metric)
+			case Counter: msg.Counters = append(msg.Counters, metric)
+			case Gauge: msg.Gauges = append(msg.Gauges, metric)
 		}
 	}
-
-	self.Logf(Info, "metrics counters: %d", len(msg.Counters))
-	self.Logf(Info, "metrics gauges: %d", len(msg.Gauges))
 
 	var response []byte
 	var err error
 
 	if response, err = HttpPostJson(self.postMetricsUrl, msg); err != nil {
-		self.Logf(Warn, "Unable to send metrics to librato - error: %v", err)
+		self.Logf(Warn, "Unable to send metrics to librato - error: %v - response: %s", err, string(response))
 	}
-
-	self.Logf(Info, "response: %s", string(response))
-
 }
 
