@@ -109,6 +109,9 @@ func (self *Metrics) listenForEvents() {
 				}
 
 			case <- self.ticker.C:
+
+				fmt.Println("Ready to relay events:", len(metrics))
+
 				toRelay := make([]Metric, len(metrics))
 				for _, v := range metrics {
 					if v.Name == "" {
