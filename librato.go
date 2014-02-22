@@ -61,8 +61,14 @@ func (self *Librato) SendMetricsToLibrato(sourceName string, metrics []Metric) {
 		}
 	}
 
-	if _, err := HttpPostJson(self.postMetricsUrl, msg); err != nil {
+	var response []byte
+	var err error
+
+	if response, err = HttpPostJson(self.postMetricsUrl, msg); err != nil {
 		self.Logf(Warn, "Unable to send metrics to librato - error: %v", err)
 	}
+
+	self.Logf(Info, "response: %s", string(response))
+
 }
 
