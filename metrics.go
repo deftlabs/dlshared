@@ -17,7 +17,6 @@
 package dlshared
 
 import "time"
-import "fmt"
 
 type MetricsRelayFunction func(string, []Metric)
 
@@ -110,23 +109,11 @@ func (self *Metrics) listenForEvents() {
 
 			case <- self.ticker.C:
 
-				fmt.Println("Ready to relay events:", len(metrics))
-
-				counter := 0
-
 				var toRelay []Metric
-				fmt.Println("Slice size before setup:", len(toRelay))
 
 				for _, v := range metrics {
-					if v.Name == "" {
-						fmt.Println("WTF - Emtpy name in to relay setup")
-					}
 					toRelay = append(toRelay, Metric{ Name: v.Name, Type: v.Type, Value: v.Value })
-					counter++
 				}
-
-				fmt.Println("Slice size after setup:", len(toRelay))
-				fmt.Println("Counter:", counter)
 
 				if len(toRelay) == 0 {
 					continue
