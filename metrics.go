@@ -102,8 +102,7 @@ func (self *Metrics) listenForEvents() {
 
 				if metric.Type == Counter {
 					current.Value = current.Value + metric.Value
-				} else {
-					// This is a gauge
+				} else { // This is a gauge
 					current.Value = metric.Value
 				}
 
