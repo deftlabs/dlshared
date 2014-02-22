@@ -68,6 +68,8 @@ func HttpPostJson(url string, value interface{}) ([]byte, error) {
 		return nil, err
 	}
 
+	fmt.Println("msg:", string(rawJson))
+
 	httpClient, httpTransport := getDefaultHttpClient()
 	defer httpTransport.Close()
 
