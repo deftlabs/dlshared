@@ -89,14 +89,14 @@ func (self *Metrics) CountWithValue(metricName string, value float64) {
 
 func (self *Metrics) listenForEvents() {
 
-	metrics := make(map[string]Metric)
+	metrics := make(map[string]*Metric)
 
     for {
         select {
 			case metric := <- self.metricChannel:
 				current, found := metrics[metric.Name]
 				if !found {
-					metrics[metric.Name] = *metric
+					metrics[metric.Name] = metric
 					continue
 				}
 
