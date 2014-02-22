@@ -114,7 +114,9 @@ func (self *Metrics) listenForEvents() {
 
 				counter := 0
 
-				toRelay := make([]Metric, len(metrics))
+				toRelay := make([]Metric, len(metrics), len(metrics))
+				fmt.Println("Slice size before setup:", len(toRelay))
+
 				for _, v := range metrics {
 					if v.Name == "" {
 						fmt.Println("WTF - Emtpy name in to relay setup")
