@@ -179,7 +179,7 @@ func newKernel(id, configFileName string) (*Kernel, error) {
 	// TODO: Add a logging structure to the configuration file and configure. Make
 	// sure this supports configuring syslog.
 
-	syslogAppender, err := NewSyslogAppender("tcp", "127.0.0.1", id)
+	syslogAppender, err := NewSyslogAppender("tcp", "127.0.0.1:6514", id)
 	if err != nil {
 		return nil, err
 	}
