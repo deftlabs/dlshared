@@ -176,12 +176,19 @@ func newKernel(id, configFileName string) (*Kernel, error) {
 		return nil, err
 	}
 
-	// TODO: Add a logging structure to the configuration file and configure.
+	// TODO: Add a logging structure to the configuration file and configure. Make
+	// sure this supports configuring syslog.
+
+	syslogAppender, err := NewSyslogAppender("tcp", "127.0.0.1", id)
+	if err != nil {
+		return nil, err
+	}
 
 	logger := Logger {
 		Prefix: id,
 		Appenders: [] Appender{
 			LevelFilter(Debug, StdErrAppender()),
+			LevelFilter(Debug, syslogAppender),
 		},
 	}
 
