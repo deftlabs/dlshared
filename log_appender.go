@@ -17,10 +17,14 @@
 package dlshared
 
 import (
-	"bytes"
-	"fmt"
 	"os"
+	"fmt"
+	"bytes"
+	"log/syslog"
 )
+
+// -------------------------------------
+// The appender interface
 
 type Appender interface {
 	Append(log *Log) error
@@ -37,6 +41,48 @@ func FormatLog(log *Log) string {
 		log.Filename, log.Line,
 		log.Message())
 }
+
+// -------------------------------------
+// The syslog appender
+
+type SyslogAppender struct {
+	writer *syslog.Writer
+}
+
+func (self *SyslogAppender) Append(log *Log) error {
+	switch log.Level {
+		case Off: return nil
+		case Debug: return self.writer.Debug(formatSyslogLog(log))
+		case Info: return self.writer.Info(formatSyslogLog(log))
+		case Warn: return self.writer.Warning(formatSyslogLog(log))
+		case Error: return self.writer.Err(formatSyslogLog(log))
+	}
+	return nil
+}
+
+func NewSyslogAppender(network, raddr, appId string) (*SyslogAppender, error) {
+
+	appender := &SyslogAppender{}
+	var err error
+
+	appender.writer, err = syslog.Dial(network, raddr, syslog.LOG_INFO, appId)
+
+	return appender, err
+}
+
+func formatSyslogLog(log *Log) string {
+	year, month, day := log.Timestamp.Date()
+	hour, min, sec := log.Timestamp.Clock()
+
+	return fmt.Sprintf("[%.4d/%.2d/%.2d %.2d:%.2d:%.2d] [%v] [%v:%d] %v\n",
+		year, month, day, hour, min, sec,
+		log.Level.Type(),
+		log.Filename, log.Line,
+		log.Message())
+}
+
+// -------------------------------------
+// The file appenders
 
 type FileAppender struct {
 	*os.File
