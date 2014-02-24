@@ -17,6 +17,7 @@
 package dlshared
 
 import (
+	"fmt"
 	"time"
 	"net/http"
 	"github.com/gorilla/mux"
