@@ -65,6 +65,8 @@ func (self *HttpServer) Start(kernel *Kernel) error {
 
 	self.router.PathPrefix("/").Handler(http.FileServer(http.Dir(self.staticFileDir)))
 
+	fmt.Println("static dir:", self.staticFileDir)
+
 	http.Handle("/", self.router)
 
 	self.server = &http.Server{
