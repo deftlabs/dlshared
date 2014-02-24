@@ -17,7 +17,6 @@
 package dlshared
 
 import (
-	"fmt"
 	"time"
 	"net/http"
 	"github.com/gorilla/mux"
@@ -49,6 +48,8 @@ func (self *HttpServer) Stop(kernel *Kernel) error {
 
 func (self *HttpServer) Start(kernel *Kernel) error {
 
+	// TODO: Add access logging
+
 	self.Logger = kernel.Logger
 
 	self.staticFileDir = kernel.Configuration.String("server.http.staticFileDir", "./static/")
@@ -65,8 +66,6 @@ func (self *HttpServer) Start(kernel *Kernel) error {
 	}
 
 	self.router.PathPrefix("/").Handler(http.FileServer(http.Dir(self.staticFileDir)))
-
-	fmt.Println("static dir:", self.staticFileDir)
 
 	http.Handle("/", self.router)
 
