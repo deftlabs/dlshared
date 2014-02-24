@@ -65,7 +65,7 @@ func NewSyslogAppender(network, raddr, appId string) (*SyslogAppender, error) {
 	appender := &SyslogAppender{}
 	var err error
 
-	appender.writer, err = syslog.Dial(network, raddr, syslog.LOG_INFO, appId)
+	appender.writer, err = syslog.Dial(network, raddr, syslog.LOG_INFO|syslog.LOG_USER, appId)
 
 	return appender, err
 }
