@@ -176,22 +176,15 @@ func newKernel(id, configFileName string) (*Kernel, error) {
 		return nil, err
 	}
 
-	// TODO: Add a logging structure to the configuration file and configure. Make
-	// sure this supports configuring syslog.
-
-	syslogAppender, err := NewSyslogAppender("", "", id)
+	// Init the logger
+	logAppenders, err := configureLogger(id, conf)
 	if err != nil {
 		return nil, err
 	}
 
-	logger := Logger {
-		Prefix: id,
-		Appenders: [] Appender{
-			LevelFilter(Debug, StdErrAppender()),
-			LevelFilter(Debug, syslogAppender),
-		},
-	}
+	logger := Logger { Prefix: id, Appenders: logAppenders }
 
+	// Create the kernel
 	kernel := &Kernel{ Components : make(map[string]Component), Configuration : conf }
 	kernel.Logger = logger
 	kernel.Id = id
@@ -201,6 +194,25 @@ func newKernel(id, configFileName string) (*Kernel, error) {
 	}
 
 	return kernel, nil
+}
+
+// TODO: Add a logging structure to the configuration file and configure. Make
+// sure this supports configuring syslog.
+func configureLogger(id string, conf *Configuration) ([]Appender, error) {
+
+	var appenders []Appender
+	appenders = append(appenders, LevelFilter(Debug, StdErrAppender()))
+
+	if conf.EnvironmentIs("prod") {
+		syslogAppender, err := NewSyslogAppender("", "", id)
+		if err != nil {
+			return nil, err
+		}
+
+		appenders = append(appenders, LevelFilter(Debug, syslogAppender))
+	}
+
+	return appenders, nil
 }
 
 func writePidFile(kernel *Kernel) error {
