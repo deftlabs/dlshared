@@ -188,6 +188,8 @@ func JsonEncodeAndWriteResponse(response http.ResponseWriter, value interface{})
 		return NewStackError("Unable to marshal json: %v", err)
 	}
 
+	response.Header().Set("Content-Type", "application/json")
+
 	written, err := response.Write(rawJson)
 	if err != nil {
 		return NewStackError("Unable to write response: %v", err)
