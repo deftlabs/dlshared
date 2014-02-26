@@ -17,7 +17,6 @@
 package dlshared
 
 import (
-	"fmt"
 	"math"
 	"testing"
 	"net/http"
