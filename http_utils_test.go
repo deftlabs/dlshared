@@ -17,8 +17,11 @@
 package dlshared
 
 import (
+	"fmt"
+	"math"
 	"testing"
 	"net/http"
+	"encoding/json"
 )
 
 type RecordingResponseWriter struct {
@@ -50,6 +53,43 @@ func (self *RecordingResponseWriter) WriteHeader(code int) {
 	self.HeaderCode = code
 }
 
+type testJsonStruct struct {
+	String string
+	Boolean bool
+	Number float64
+}
+
+func TestJsonEncodeAndWriteResponse(t *testing.T) {
+
+	response := NewRecordingResponseWriter()
+
+	test := &testJsonStruct{ String: "test", Boolean: true, Number: math.MaxFloat64 }
+
+	// Write the data
+	if err := JsonEncodeAndWriteResponse(response, test); err != nil {
+		t.Errorf("JsonEncodeAndWriteResponse is broken - %v", err)
+	}
+
+	// Ensure the response
+	decoded := &testJsonStruct{}
+	if err := json.Unmarshal(response.Data, decoded); err != nil {
+		t.Errorf("JsonEncodeAndWriteResponse unmarshal data is broken - %v", err)
+	}
+
+	if test.String != decoded.String {
+		t.Errorf("JsonEncodeAndWriteResponse is broken - expected string: %s - received: %s", test.String, decoded.String)
+	}
+
+	if test.Boolean != decoded.Boolean {
+		t.Errorf("JsonEncodeAndWriteResponse is broken - expected bool : %s - received: %s", test.Boolean, decoded.Boolean)
+	}
+
+	if test.Number != decoded.Number {
+		t.Errorf("JsonEncodeAndWriteResponse is broken - expected number : %s - received: %s", test.Number, decoded.Number)
+	}
+
+}
+
 func TestWriteOkResponseString(t *testing.T) {
 
 	response := NewRecordingResponseWriter()
@@ -72,7 +112,12 @@ func TestWriteOkResponseString(t *testing.T) {
 		t.Errorf("IsHttpMethodPost reset is broken")
 	}
 
-	writeOkResponseStringEmptyMsgPanic(response, t)
+	err := WriteOkResponseString(response, "")
+	if err == nil {
+		t.Errorf("WriteOkResponseString is broken - no error on empty message")
+	}
+
+	//writeOkResponseStringEmptyMsgPanic(response, t)
 
 	if err := WriteOkResponseString(response, "t"); err != nil {
 		t.Errorf("IsHttpMethodPost is broken - %v", err)
@@ -87,26 +132,11 @@ func TestWriteOkResponseString(t *testing.T) {
 		t.Errorf("IsHttpMethodPost is broken - %v", err)
 	}
 
-	// Verify the panic
-	defer func() {
-		if r := recover(); r == nil {
-			t.Errorf("WriteOkResponseString is broken - it did not panic on nil response")
-		}
-	}()
-
 	// This will panic
-	WriteOkResponseString(nil, "")
-}
-
-func writeOkResponseStringEmptyMsgPanic(response http.ResponseWriter, t *testing.T) {
-	// Verify the panic
-	defer func() {
-		if r := recover(); r == nil {
-			t.Errorf("WriteOkResponseString is broken - it did not panic on an empty message")
-		}
-	}()
-
-	WriteOkResponseString(response, "")
+	err = WriteOkResponseString(nil, "")
+	if err == nil {
+		t.Errorf("WriteOkResponseString is broken  - no error on nil response param")
+	}
 }
 
 func TestIsHttpMethodPost(t *testing.T) {
@@ -145,7 +175,4 @@ func TestIsHttpMethodPost(t *testing.T) {
 	// This method will panic.
 	IsHttpMethodPost(nil)
 }
-
-
-
 
