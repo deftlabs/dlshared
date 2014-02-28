@@ -16,7 +16,24 @@
 
 package dlshared
 
-import "testing"
+import (
+	"errors"
+	"testing"
+)
+
+// Confirm the way errors behave.
+func TestErrors(t *testing.T) {
+
+	err := errors.New("test")
+
+	if nil == err {
+		t.Errorf("TestErrors is broken - nil == error")
+	}
+
+	if err != err {
+		t.Errorf("TestErrors is broken - error == error")
+	}
+}
 
 // Confirm the way slices behave.
 func TestSlices(t *testing.T) {
