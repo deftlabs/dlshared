@@ -47,29 +47,24 @@ func (self *DataSource) InsertSafe(doc interface{}, safeMode *mgo.Safe) error {
 	return session.DB(self.DbName).C(self.CollectionName).Insert(doc)
 }
 
-// Find by the _id. Returns nil if not found.
-func (self *DataSource) FindById(id interface{}, result interface{}) (interface{}, error) {
-	if doc, err := self.FindOne(&bson.M{ "_id": id }, result); err != nil {
-		return nil, err
-	} else {
-		return doc, nil
-	}
+// Find by the _id. Returns false if not found.
+func (self *DataSource) FindById(id interface{}, result interface{}) (bool, error) {
+	return self.FindOne(&bson.M{ "_id": id }, result)
 }
 
-// Finds one document or returns nil. If the document is not found the two return values are nil. This
-// method takes the result param and returns it if found (nil otherwise).
-func (self *DataSource) FindOne(query *bson.M, result interface{}) (interface{}, error) {
+// Finds one document or returns false.
+func (self *DataSource) FindOne(query *bson.M, result interface{}) (bool, error) {
 	err := self.Collection().Find(query).One(result)
 
 	if err != nil && err == mgo.ErrNotFound {
-		return nil, nil
+		return false, nil
 	}
 
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 
-	return result, nil
+	return true, nil
 }
 
 // Delete one or more documents from the collection. If the document(s) is/are not found, no error
