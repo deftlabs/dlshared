@@ -52,14 +52,22 @@ func (self *DataSource) FindById(id interface{}, result interface{}) error {
 	return self.FindOne(&bson.M{ "_id": id }, result)
 }
 
+// This returns too booleans. The first is true if the document was not found.
+// The second is true if there is an error that is not mgo.ErrNOtFound
+func (self *DataSource) CheckError(err error) (bool, bool) {
+	if err == nil {
+		return false, false
+	}
+
+	return  err == mgo.ErrNotFound, err != mgo.ErrNotFound
+}
+
 func (self *DataSource) ErrNotFound(err error) (bool) {
 	if err == nil {
 		return false
 	}
-
 	return err == mgo.ErrNotFound
 }
-
 
 // Finds one document or returns false.
 func (self *DataSource) FindOne(query *bson.M, result interface{}) error {
