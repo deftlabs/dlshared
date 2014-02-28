@@ -52,20 +52,16 @@ func (self *DataSource) FindById(id interface{}, result interface{}) error {
 	return self.FindOne(&bson.M{ "_id": id }, result)
 }
 
-// This returns too booleans. The first is true if the document was not found.
-// The second is true if there is an error that is not mgo.ErrNOtFound
-func (self *DataSource) CheckError(err error) (bool, bool) {
-	if err == nil {
-		return false, false
+// Returns nil if this is a NOT a document not found error.
+func (self *DataSource) RemoveNotFoundErr(err error) error {
+	if self.NotFoundErr(err) {
+		return nil
 	}
-
-	return  err == mgo.ErrNotFound, err != mgo.ErrNotFound
+	return err
 }
 
-func (self *DataSource) ErrNotFound(err error) (bool) {
-	if err == nil {
-		return false
-	}
+// Returns true if this is a document not found error.
+func (self *DataSource) NotFoundErr(err error) (bool) {
 	return err == mgo.ErrNotFound
 }
 
