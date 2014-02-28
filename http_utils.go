@@ -17,6 +17,7 @@
 package dlshared
 
 import (
+	"net/url"
 	"net/http"
 	"io/ioutil"
 	"time"
@@ -33,6 +34,25 @@ const (
 	ContentTypeHeader = "Content-Type"
 	ContentTypeTextPlain = "text/plain; charset=utf-8"
 )
+
+func HttpPost(url string, values url.Values) ([]byte, error) {
+
+	httpClient, httpTransport := getDefaultHttpClient()
+	defer httpTransport.Close()
+
+	response, err := httpClient.PostForm(url, values)
+	if err != nil {
+		return nil, err
+	}
+
+	defer response.Body.Close()
+
+	if data, err := ioutil.ReadAll(response.Body); err != nil {
+		return nil, err
+	} else {
+		return data, nil
+	}
+}
 
 func HttpPostStr(url string, value string) ([]byte, error) {
 
