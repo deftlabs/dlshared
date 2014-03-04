@@ -27,6 +27,10 @@ import (
 	"math/rand"
 )
 
+const (
+	nadaStr = "" // This is internal to dlshared.
+)
+
 type Kernel struct {
 	Configuration *Configuration
 	Components map[string]Component
