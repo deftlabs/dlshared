@@ -47,6 +47,17 @@ func (self *DataSource) InsertSafe(doc interface{}, safeMode *mgo.Safe) error {
 	return session.DB(self.DbName).C(self.CollectionName).Insert(doc)
 }
 
+// Set a property using a specified safe mode.
+func (self *DataSource) SetFieldSafe(query interface{}, safeMode *mgo.Safe, field string, value interface{}) error {
+	session := self.SessionClone()
+	defer session.Close()
+	session.SetSafe(safeMode)
+
+	doc := &bson.M{ "$set": &bson.M{ field: value } }
+
+	return self.RemoveNotFoundErr(session.DB(self.DbName).C(self.CollectionName).Update(query, doc))
+}
+
 // Find by the _id. Returns false if not found.
 func (self *DataSource) FindById(id interface{}, result interface{}) error {
 	return self.FindOne(&bson.M{ "_id": id }, result)
