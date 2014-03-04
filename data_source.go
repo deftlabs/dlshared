@@ -38,24 +38,26 @@ func (self *DataSource) Upsert(selector interface{}, change interface{}) error {
 }
 
 // Insert a document into a collection with the passed write concern.
-func (self *DataSource) InsertSafe(doc interface{}, safeMode *mgo.Safe) error {
+func (self *DataSource) InsertSafe(doc interface{}) error {
 	session := self.SessionClone()
 
 	defer session.Close()
 
-	session.SetSafe(safeMode)
+	session.SetSafe(self.Mongo.DefaultSafe)
 	return session.DB(self.DbName).C(self.CollectionName).Insert(doc)
 }
 
-// Set a property using a specified safe mode.
-func (self *DataSource) SetFieldSafe(query interface{}, safeMode *mgo.Safe, field string, value interface{}) error {
+// Set a property using a "safe" operation. If this is a standalone mongo or a mongos, it will use: WMode: "majority".
+// If this is a standalone mongo, it will use: w: 1
+func (self *DataSource) SetFieldSafe(query interface{}, field string, value interface{}) error {
 	session := self.SessionClone()
 	defer session.Close()
-	session.SetSafe(safeMode)
 
-	doc := &bson.M{ "$set": &bson.M{ field: value } }
+	session.SetSafe(self.Mongo.DefaultSafe)
 
-	return self.RemoveNotFoundErr(session.DB(self.DbName).C(self.CollectionName).Update(query, doc))
+	update := &bson.M{ "$set": &bson.M{ field: value } }
+
+	return self.RemoveNotFoundErr(session.DB(self.DbName).C(self.CollectionName).Update(query, update))
 }
 
 // Find by the _id. Returns false if not found.
