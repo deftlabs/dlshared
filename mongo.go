@@ -22,16 +22,25 @@ import (
 	"labix.org/v2/mgo"
 )
 
+type MongoConnectionType string
+
+const (
+	MongosConnectionType = MongoConnectionType("mongos")
+	StandaloneConnectionType = MongoConnectionType("standalone")
+	ReplicaSetConnectionType = MongoConnectionType("replicaSet")
+)
+
 // Create a new Mongo component from a configuration path. The path passed must be in the following format.
 //
 // mongodb: {
 //     configDb: {
 //         mongoUrl: "mongodb://localhost:27017/test",
-//         mode: 0,
+//         mode: "strong",
 //         dialTimeoutInMs: 3000,
 //         socketTimeoutInMs: 3000,
 //         syncTimeoutInMs: 3000,
 //         cursorTimeoutInMs: 30000,
+//         type: "standalone",
 //     }
 // }
 //
@@ -55,7 +64,14 @@ func NewMongoFromConfigPath(componentId, configPath string) *Mongo {
 }
 
 // Create a new Mongo component. This method will panic if either of the params are nil or len == 0.
-func NewMongo(componentId, mongoUrl string, mode, dialTimeoutInMs, socketTimeoutInMs, syncTimeoutInMs, cursorTimeoutInMs int) *Mongo {
+func NewMongo(	componentId,
+				mongoUrl string,
+				connectionType MongoConnectionType,
+				mode string,
+				dialTimeoutInMs,
+				socketTimeoutInMs,
+				syncTimeoutInMs,
+				cursorTimeoutInMs int) *Mongo {
 
 	if len(componentId) == 0 {
 		panic("When calling NewMongo you must pass in a non-empty component id")
@@ -65,14 +81,20 @@ func NewMongo(componentId, mongoUrl string, mode, dialTimeoutInMs, socketTimeout
 		panic("When calling NewMongo you must pass in a non-empty Mongo url")
 	}
 
+	if len(connectionType) == 0 {
+		panic("When calling NewMongo you must pass in a non-empty connection type (standalone | mongos | replicaSet)")
+	}
+
 	return &Mongo{
-		componentId : componentId,
+		componentId: componentId,
 		mongoUrl: mongoUrl,
-		mode : mode,
-		dialTimeoutInMs : dialTimeoutInMs,
-		socketTimeoutInMs : socketTimeoutInMs,
-		syncTimeoutInMs : syncTimeoutInMs,
-		cursorTimeoutInMs : cursorTimeoutInMs,
+		connectionType: MongoConnectionType(connectionType),
+		mode: mode,
+		dialTimeoutInMs: dialTimeoutInMs,
+		socketTimeoutInMs: socketTimeoutInMs,
+		syncTimeoutInMs: syncTimeoutInMs,
+		cursorTimeoutInMs: cursorTimeoutInMs,
+		DefaultSafe: defaultSafe(MongoConnectionType(connectionType)),
 	}
 }
 
@@ -84,14 +106,16 @@ type Mongo struct {
 
 	componentId string
 	mongoUrl string
-	mode int
+	mode string
 	dialTimeoutInMs int
 	socketTimeoutInMs int
 	syncTimeoutInMs int
 	cursorTimeoutInMs int
 	session *mgo.Session
-}
+	connectionType MongoConnectionType
 
+	DefaultSafe *mgo.Safe
+}
 
 // Returns the collection from the session.
 func (self *Mongo) Collection(dbName, collectionName string) *mgo.Collection { return self.Db(dbName).C(collectionName) }
@@ -108,6 +132,19 @@ func (self *Mongo) SessionClone() *mgo.Session { return self.session.Clone() }
 // Returns a copy of the session struct.
 func (self *Mongo) SessionCopy() *mgo.Session { return self.session.Clone() }
 
+// Returns a default safest mode. If this is a mongos or replica set, WMode: "majority" - if this is
+// a standalone instance, w: 1
+func defaultSafe(connectionType MongoConnectionType) *mgo.Safe {
+	switch connectionType {
+		case MongosConnectionType: return &mgo.Safe{ WMode: "majority" }
+		case ReplicaSetConnectionType: return &mgo.Safe{ WMode: "majority" }
+		case StandaloneConnectionType: return &mgo.Safe{ W: 1 }
+		default: panic("Unknown connection type: " + connectionType)
+	}
+
+	return nil
+}
+
 func (self *Mongo) Start(kernel *Kernel) error {
 	self.kernel = kernel
 	self.Logger = kernel.Logger
@@ -117,7 +154,8 @@ func (self *Mongo) Start(kernel *Kernel) error {
 	// This is a configuration based creation. Load the config data first.
 	if len(self.configPath) > 0 {
 		self.mongoUrl = self.kernel.Configuration.String(fmt.Sprintf("%s.%s", self.configPath, "mongoUrl"), "")
-		self.mode = self.kernel.Configuration.Int(fmt.Sprintf("%s.%s", self.configPath, "mode"), -1)
+		self.connectionType = MongoConnectionType(self.kernel.Configuration.String(fmt.Sprintf("%s.%s", self.configPath, "type"), ""))
+		self.mode = self.kernel.Configuration.String(fmt.Sprintf("%s.%s", self.configPath, "mode"), "")
 		self.dialTimeoutInMs = self.kernel.Configuration.Int(fmt.Sprintf("%s.%s", self.configPath, "dialTimeoutInMs"), -1)
 		self.socketTimeoutInMs = self.kernel.Configuration.Int(fmt.Sprintf("%s.%s", self.configPath, "socketTimeoutInMs"), -1)
 		self.syncTimeoutInMs = self.kernel.Configuration.Int(fmt.Sprintf("%s.%s", self.configPath, "syncTimeoutInMs"), -1)
@@ -127,6 +165,10 @@ func (self *Mongo) Start(kernel *Kernel) error {
 	// Validate the params
 	if len(self.mongoUrl) == 0 {
 		panic(fmt.Sprintf("In Mongo - mongoUrl is not set - componentId: %s", self.componentId))
+	}
+
+	if len(self.connectionType) == 0 {
+		panic(fmt.Sprintf("In Mongo - type is not set - componentId: %s", self.componentId))
 	}
 
 	if self.dialTimeoutInMs < 0 {
@@ -145,8 +187,12 @@ func (self *Mongo) Start(kernel *Kernel) error {
 		panic(fmt.Sprintf("In Mongo - cursorTimeoutInMs is invalid - value: %d - componentId: %s", self.cursorTimeoutInMs, self.componentId))
 	}
 
-	if self.mode < 0  || self.mode > 2 {
-		panic(fmt.Sprintf("In Mongo - mode is invalid - value: %d - componentId: %s", self.mode, self.componentId))
+	if len(self.mode) == 0 {
+		panic(fmt.Sprintf("In Mongo - mode is invalid - value: %s - componentId: %s", self.mode, self.componentId))
+	}
+
+	if self.mode != "strong" && self.mode != "eventual" && self.mode != "montonic" {
+		panic(fmt.Sprintf("In Mongo - mode is invalid - value: %s - componentId: %s", self.mode, self.componentId))
 	}
 
 	// Create the session.
@@ -156,13 +202,16 @@ func (self *Mongo) Start(kernel *Kernel) error {
 
 	// This is annoying, but mgo defines these constants as the restricted "mode" type.
 	switch self.mode {
-		case 0: self.session.SetMode(mgo.Eventual, true)
-		case 1: self.session.SetMode(mgo.Monotonic, true)
-		case 2: self.session.SetMode(mgo.Strong, true)
+		case "eventual": self.session.SetMode(mgo.Eventual, true)
+		case "monotonic": self.session.SetMode(mgo.Monotonic, true)
+		case "strong": self.session.SetMode(mgo.Strong, true)
 	}
+
+	self.DefaultSafe = defaultSafe(self.connectionType)
 
 	self.session.SetSocketTimeout(time.Duration(self.socketTimeoutInMs) * time.Millisecond)
 	self.session.SetSyncTimeout(time.Duration(self.syncTimeoutInMs) * time.Millisecond)
+	self.session.SetSafe(nil)
 
 	return nil
 }
