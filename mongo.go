@@ -92,6 +92,7 @@ type Mongo struct {
 	session *mgo.Session
 }
 
+
 // Returns the collection from the session.
 func (self *Mongo) Collection(dbName, collectionName string) *mgo.Collection { return self.Db(dbName).C(collectionName) }
 
