@@ -65,5 +65,11 @@ func TestMaps(t *testing.T) {
 		t.Errorf("TestMaps is broken - something not found that should be found")
 	}
 
+	// A missing key, should not panic.
+	emptyStr := mapTest["four"]
+
+	if len(emptyStr) != 0 {
+		t.Errorf("TestMaps is broken - the empty value has something")
+	}
 }
 
