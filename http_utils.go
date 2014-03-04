@@ -31,8 +31,13 @@ import (
 const (
 	SocketTimeout = 40
 	HttpPostMethod = "POST"
+	HttpGetMethod = "GET"
+
 	ContentTypeHeader = "Content-Type"
+
 	ContentTypeTextPlain = "text/plain; charset=utf-8"
+	ContentTypePostForm = "application/x-www-form-urlencoded"
+	ContentTypeJson = "application/json"
 )
 
 func HttpPost(url string, values url.Values) ([]byte, error) {
@@ -59,11 +64,11 @@ func HttpPostStr(url string, value string) ([]byte, error) {
 	httpClient, httpTransport := getDefaultHttpClient()
 	defer httpTransport.Close()
 
-	request, err := http.NewRequest("POST", url, bytes.NewReader([]byte(value)))
+	request, err := http.NewRequest(HttpPostMethod, url, bytes.NewReader([]byte(value)))
 	if err != nil {
 		return nil, err
 	}
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	request.Header.Set(ContentTypeHeader, ContentTypePostForm)
 
 	response, err := httpClient.Do(request)
 	if err != nil {
@@ -89,11 +94,11 @@ func HttpPostJson(url string, value interface{}) ([]byte, error) {
 	httpClient, httpTransport := getDefaultHttpClient()
 	defer httpTransport.Close()
 
-	request, err := http.NewRequest("POST", url, bytes.NewReader(rawJson))
+	request, err := http.NewRequest(HttpPostMethod, url, bytes.NewReader(rawJson))
 	if err != nil {
 		return nil, err
 	}
-	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set(ContentTypeHeader, ContentTypeJson)
 
 	response, err := httpClient.Do(request)
 	if err != nil {
@@ -123,7 +128,7 @@ func HttpPostBson(url string, bsonDoc interface{}) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	request.Header.Set(ContentTypeHeader, ContentTypePostForm)
 
 	response, err := httpClient.Do(request)
 	if err != nil {
@@ -158,7 +163,7 @@ func HttpGetBson(url string) (bson.M, error) {
 	httpClient, httpTransport := getDefaultHttpClient()
 	defer httpTransport.Close()
 
-	request, requestErr := http.NewRequest("GET", url, nil)
+	request, requestErr := http.NewRequest(HttpGetMethod, url, nil)
 	if requestErr != nil {
 		return nil, requestErr
 	}
@@ -208,7 +213,7 @@ func JsonEncodeAndWriteResponse(response http.ResponseWriter, value interface{})
 		return NewStackError("Unable to marshal json: %v", err)
 	}
 
-	response.Header().Set("Content-Type", "application/json")
+	response.Header().Set(ContentTypeHeader, ContentTypeJson)
 
 	written, err := response.Write(rawJson)
 	if err != nil {
