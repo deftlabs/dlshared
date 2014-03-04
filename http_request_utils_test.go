@@ -18,8 +18,6 @@ package dlshared
 
 import (
 	"fmt"
-	//"io/ioutil"
-
 	"bytes"
 	"testing"
 	"net/http"
@@ -36,7 +34,7 @@ func TestNewHttpContextBasic(t *testing.T) {
 		t.Errorf("TestNewHttpContextBasic is broken - empty params are not valid")
 	}
 
-	if len(ctx.InvalidErrorCodes) != 0 {
+	if len(ctx.ErrorCodes) != 0 {
 		t.Errorf("TestNewHttpContextBasic is broken - there are error codes")
 	}
 }
@@ -128,12 +126,12 @@ func validateParamOutput(paramTypeName string, ctx *HttpContext, t *testing.T) {
 	if !ctx.ParamsAreValid() {
 		t.Errorf("%s is broken - params are not valid", paramTypeName)
 
-		for i := range ctx.InvalidErrorCodes {
-			fmt.Println(ctx.InvalidErrorCodes[i])
+		for i := range ctx.ErrorCodes {
+			fmt.Println(ctx.ErrorCodes[i])
 		}
 	}
 
-	if len(ctx.InvalidErrorCodes) != 0 {
+	if len(ctx.ErrorCodes) != 0 {
 		t.Errorf("%s is broken - there are error codes", paramTypeName)
 	}
 

@@ -44,7 +44,7 @@ type HttpContext struct {
 	Response http.ResponseWriter
 	Request *http.Request
 	Params map[string]*HttpParam
-	InvalidErrorCodes []string
+	ErrorCodes []string
 }
 
 type HttpParam struct {
@@ -78,7 +78,7 @@ func (self *HttpParam) setPresentValue(value interface{}) {
 }
 
 // Validate the params. If any of the params are invalid, false is returned. You must call
-// this first before calling the InvalidErrorCodes []string. If not params are defined, this always
+// this first before calling the ErrorCodes []string. If not params are defined, this always
 // returns "true".
 func (self *HttpContext) ParamsAreValid() bool {
 	if len(self.Params) == 0 {
@@ -94,7 +94,7 @@ func (self *HttpContext) ParamsAreValid() bool {
 		}
 	}
 
-	return len(self.InvalidErrorCodes) == 0
+	return len(self.ErrorCodes) == 0
 }
 
 // This returns the param value as a string. If the param is missing or empty,
@@ -110,7 +110,7 @@ func retrieveParamValue(ctx *HttpContext, param *HttpParam) string {
 }
 
 func appendInvalidErrorCode(ctx *HttpContext, param *HttpParam) {
-	ctx.InvalidErrorCodes = append(ctx.InvalidErrorCodes, param.InvalidErrorCode)
+	ctx.ErrorCodes = append(ctx.ErrorCodes, param.InvalidErrorCode)
 	param.Valid = false
 }
 
