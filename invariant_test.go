@@ -17,6 +17,7 @@
 package dlshared
 
 import (
+	"fmt"
 	"errors"
 	"testing"
 )
@@ -49,6 +50,20 @@ func TestSlices(t *testing.T) {
 	}
 }
 
+// Confirm the way data types behave.
+func TestDataTypes(t *testing.T) {
+
+	val := fmt.Sprintf("%t", true)
+	if val != "true" {
+		t.Errorf("TestDataTypes is broken - true != true")
+	}
+
+	val = fmt.Sprintf("%t", false)
+	if val != "false" {
+		t.Errorf("TestDataTypes is broken - false != false")
+	}
+}
+
 // Confirm the way maps behave.
 func TestMaps(t *testing.T) {
 
@@ -70,6 +85,13 @@ func TestMaps(t *testing.T) {
 
 	if len(emptyStr) != 0 {
 		t.Errorf("TestMaps is broken - the empty value has something")
+	}
+
+	var testMap map[string]string
+
+	// Make sure a var map is nil
+	if testMap != nil {
+		t.Errorf("TestMaps is broken - uninitiated map should be nil")
 	}
 }
 
