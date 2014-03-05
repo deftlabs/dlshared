@@ -39,6 +39,25 @@ func TestNewHttpContextBasic(t *testing.T) {
 	}
 }
 
+func TestNewHttpContextJsonPostParams(t *testing.T) {
+	response := NewRecordingResponseWriter()
+	request, err := http.NewRequest(
+		"POST",
+		"/foo",
+		bytes.NewBuffer([]byte("{\"testInt0\": 100,\"testInt1\":\"\",\"testBool0\": true,\"testBool1\":\"\", \"testFloat0\": 99.9999999999,\"testFloat1\":\"\", \"testString0\": \"hello!\",\"testString1\":\"\"}")),
+	)
+
+	if err != nil {
+		t.Errorf("TestNewHttpContextJsonPostParams is broken - NewRequest failed")
+	}
+
+	ctx := NewHttpContext(response, request)
+
+	defineParams(ctx, HttpParamJsonPost)
+
+	validateParamOutput("jsonpost", ctx, t)
+}
+
 func TestNewHttpContextPostParams(t *testing.T) {
 
 	response := NewRecordingResponseWriter()
@@ -128,6 +147,12 @@ func validateParamOutput(paramTypeName string, ctx *HttpContext, t *testing.T) {
 
 		for i := range ctx.ErrorCodes {
 			fmt.Println(ctx.ErrorCodes[i])
+		}
+	}
+
+	if ctx.HasRawErrors() {
+		for i := range ctx.Errors {
+			t.Errorf("TestNewHttpContextJsonPostParams is broken - errors: %v", ctx.Errors[i])
 		}
 	}
 
