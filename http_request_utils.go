@@ -17,9 +17,13 @@
 package dlshared
 
 import (
+	"fmt"
 	"strings"
+	"reflect"
 	"strconv"
 	"net/http"
+	"io/ioutil"
+	"encoding/json"
 	"github.com/gorilla/mux"
 )
 
@@ -35,9 +39,10 @@ const(
 	// All of the param types only support single values (i.e., no slices). If multiple values are present, the
 	// first is taken.
 	HttpParamPost = HttpParamType(0)
-	HttpParamQuery = HttpParamType(1)
-	HttpParamHeader = HttpParamType(2)
-	HttpParamPath = HttpParamType(3) // This must be declared as {someName} in the path mapping
+	HttpParamJsonPost = HttpParamType(1) // When the content body is posted in json format. This only supports one level
+	HttpParamQuery = HttpParamType(2)
+	HttpParamHeader = HttpParamType(3)
+	HttpParamPath = HttpParamType(4) // This must be declared as {someName} in the path mapping
 )
 
 type HttpContext struct {
@@ -45,6 +50,11 @@ type HttpContext struct {
 	Request *http.Request
 	Params map[string]*HttpParam
 	ErrorCodes []string
+	Errors []error
+
+	postJson map[string]interface{}
+
+	body []byte
 }
 
 type HttpParam struct {
@@ -79,8 +89,13 @@ func (self *HttpParam) setPresentValue(value interface{}) {
 
 // Validate the params. If any of the params are invalid, false is returned. You must call
 // this first before calling the ErrorCodes []string. If not params are defined, this always
-// returns "true".
+// returns "true". If there are raw data extraction errors, this is always false (e.g., body missing or incorrect).
 func (self *HttpContext) ParamsAreValid() bool {
+
+	if len(self.Errors) != 0 {
+		return false
+	}
+
 	if len(self.Params) == 0 {
 		return true
 	}
@@ -97,15 +112,69 @@ func (self *HttpContext) ParamsAreValid() bool {
 	return len(self.ErrorCodes) == 0
 }
 
+func (self *HttpContext) HasRawErrors() bool { return len(self.Errors) > 0 }
+
 // This returns the param value as a string. If the param is missing or empty,
 // the string will be len == 0.
 func retrieveParamValue(ctx *HttpContext, param *HttpParam) string {
 	switch param.Type {
 		case HttpParamPost: return strings.TrimSpace(ctx.Request.PostFormValue(param.Name))
+		case HttpParamJsonPost: return retrieveJsonParamValue(ctx, param)
 		case HttpParamQuery: return strings.TrimSpace(ctx.Request.FormValue(param.Name))
 		case HttpParamHeader: return strings.TrimSpace(ctx.Request.Header.Get(param.Name))
 		case HttpParamPath: return strings.TrimSpace(mux.Vars(ctx.Request)[param.Name])
 	}
+	return nadaStr
+}
+
+func retrieveJsonParamValue(ctx *HttpContext, param *HttpParam) string {
+
+	if len(ctx.Errors) > 0 {
+		return nadaStr
+	}
+
+	// If this is the first access, read the body
+	if len(ctx.body) == 0 {
+		var err error
+		ctx.body, err = ioutil.ReadAll(ctx.Request.Body)
+		if err != nil {
+			ctx.Errors = append(ctx.Errors, NewStackError("Error in raw data extraction - error: %v", err))
+			return nadaStr
+		}
+	}
+
+	if ctx.postJson == nil {
+		var genJson interface{}
+		err := json.Unmarshal(ctx.body, &genJson)
+		if err != nil {
+			ctx.Errors = append(ctx.Errors, NewStackError("Error in raw json data extraction - error: %v", err))
+			return nadaStr
+		}
+
+		ctx.postJson = genJson.(map[string]interface{})
+	}
+
+	// Look for the value in the json. The json may hold the data in a variety
+	// of formats. Convert back to a string to deal with the other data types :-(
+	val, found := ctx.postJson[param.Name]
+	if !found {
+		return nadaStr
+	}
+
+	valType := reflect.TypeOf(val)
+
+	if valType == nil {
+		return nadaStr
+	}
+
+	switch valType.Kind() {
+		case reflect.Invalid: return nadaStr
+		case reflect.Bool: return fmt.Sprintf("%t", val.(bool))
+		case reflect.Float64: return fmt.Sprintf("%g", val.(float64))
+		case reflect.String: return val.(string)
+		default: return nadaStr
+	}
+
 	return nadaStr
 }
 
@@ -136,6 +205,7 @@ func validateIntParam(ctx *HttpContext, param *HttpParam) {
 func validateStringParam(ctx *HttpContext, param *HttpParam) {
 
 	param.Raw = retrieveParamValue(ctx, param)
+
 	if len(param.Raw) == 0 && param.Required {
 		appendInvalidErrorCode(ctx, param)
 		return
@@ -155,8 +225,8 @@ func validateStringParam(ctx *HttpContext, param *HttpParam) {
 }
 
 func validateFloatParam(ctx *HttpContext, param *HttpParam) {
-
 	param.Raw = retrieveParamValue(ctx, param)
+
 	if len(param.Raw) == 0 && param.Required {
 		appendInvalidErrorCode(ctx, param)
 		return
@@ -175,7 +245,9 @@ func validateFloatParam(ctx *HttpContext, param *HttpParam) {
 
 // Boolean types include: 1, t, T, TRUE, true, True, 0, f, F, FALSE, false
 func validateBoolParam(ctx *HttpContext, param *HttpParam) {
+
 	param.Raw = retrieveParamValue(ctx, param)
+
 	if len(param.Raw) == 0 && param.Required {
 		appendInvalidErrorCode(ctx, param)
 		return
