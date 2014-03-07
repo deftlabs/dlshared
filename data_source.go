@@ -60,6 +60,22 @@ func (self *DataSource) InsertSafe(doc interface{}) error {
 	return nil
 }
 
+// Unset a field with the default safe enabled - uses $unset
+func (self *DataSource) UnsetFieldSafe(query interface{}, field string) error {
+	session := self.SessionClone()
+	defer session.Close()
+
+	session.SetSafe(self.Mongo.DefaultSafe)
+
+	update := &bson.M{ "$unset": &bson.M{ field: nadaStr } }
+
+	if err := self.RemoveNotFoundErr(session.DB(self.DbName).C(self.CollectionName).Update(query, update)); err != nil {
+		return NewStackError("Unable to UnsetFieldSafe - db: %s - collection: %s - error: %v", self.DbName, self.CollectionName, err)
+	}
+
+	return nil
+}
+
 // Set a property using a "safe" operation. If this is a standalone mongo or a mongos, it will use: WMode: "majority".
 // If this is a standalone mongo, it will use: w: 1
 func (self *DataSource) SetFieldSafe(query interface{}, field string, value interface{}) error {
