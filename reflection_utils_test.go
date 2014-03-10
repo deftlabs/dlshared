@@ -21,37 +21,37 @@ import "testing"
 func TestGetFunctionName(t *testing.T) {
 
 
-	if GetFunctionName(testFunction1) != "dlshared.testFunction1" {
-		t.Errorf("TestGetFunctionName failed - expected: dlshared.testFunction1 - received: %s", GetFunctionName(testFunction1))
+	if GetFunctionName(testFunction1) != "dlshared.testFunction1" && GetFunctionName(testFunction1) != "workspace.testFunction1"  {
+		t.Errorf("TestGetFunctionName failed - expected: testFunction1 - received: %s", GetFunctionName(testFunction1))
 	}
 
-	if GetFunctionName(testFunction2) != "dlshared.testFunction2" {
-		t.Errorf("TestGetFunctionName failed - expected: dlshared.testFunction2 - received: %s", GetFunctionName(testFunction2))
+	if GetFunctionName(testFunction2) != "dlshared.testFunction2" && GetFunctionName(testFunction2) != "workspace.testFunction2" {
+		t.Errorf("TestGetFunctionName failed - expected: testFunction2 - received: %s", GetFunctionName(testFunction2))
 	}
 
 	bar := Bar{}
-	if GetFunctionName(bar.test) != "dlshared.Bar.test" {
-		t.Errorf("TestGetFunctionName failed - expected: dlshared.Bar.test - received: %s", GetFunctionName(bar.test))
+	if GetFunctionName(bar.test) != "dlshared.Bar.test" && GetFunctionName(bar.test) != "workspace.Bar.test" {
+		t.Errorf("TestGetFunctionName failed - expected: Bar.test - received: %s", GetFunctionName(bar.test))
 	}
 
 	bar1 := &Bar{}
-	if GetFunctionName(bar1.test) != "dlshared.Bar.test" {
-		t.Errorf("TestGetFunctionName failed - expected: dlshared.Bar.test - received: %s", GetFunctionName(bar1.test))
+	if GetFunctionName(bar1.test) != "dlshared.Bar.test" && GetFunctionName(bar1.test) != "workspace.Bar.test" {
+		t.Errorf("TestGetFunctionName failed - expected: Bar.test - received: %s", GetFunctionName(bar1.test))
 	}
 
 	foo := Foo{}
-	if GetFunctionName(foo.test) != "dlshared.Foo.test" {
-		t.Errorf("TestGetFunctionName failed - expected: dlshared.Foo.test - received: %s", GetFunctionName(foo.test))
+	if GetFunctionName(foo.test) != "dlshared.Foo.test" && GetFunctionName(foo.test) != "workspace.Foo.test" {
+		t.Errorf("TestGetFunctionName failed - expected: Foo.test - received: %s", GetFunctionName(foo.test))
 	}
 
 	foo1 := Foo{}
-	if GetFunctionName(foo1.test) != "dlshared.Foo.test" {
-		t.Errorf("TestGetFunctionName failed - expected: dlshared.Foo.test - received: %s", GetFunctionName(foo1.test))
+	if GetFunctionName(foo1.test) != "dlshared.Foo.test" && GetFunctionName(foo1.test) != "workspace.Foo.test" {
+		t.Errorf("TestGetFunctionName failed - expected: Foo.test - received: %s", GetFunctionName(foo1.test))
 	}
 
 	testFunc := func() { }
-	if GetFunctionName(testFunc) != "dlshared.func·013" {
-		t.Errorf("TestGetFunctionName failed - expected: dlshared.func·013 - received: %s", GetFunctionName(testFunc))
+	if GetFunctionName(testFunc) != "dlshared.func·013" && GetFunctionName(testFunc) != "workspace.func·013"  {
+		t.Errorf("TestGetFunctionName failed - expected: func·013 - received: %s", GetFunctionName(testFunc))
 	}
 }
 
