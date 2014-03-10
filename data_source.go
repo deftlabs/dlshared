@@ -76,6 +76,24 @@ func (self *DataSource) UnsetFieldSafe(query interface{}, field string) error {
 	return nil
 }
 
+// Set fields using a "safe" operation. If this is a standalone mongo or a mongos, it will use: WMode: "majority".
+// If this is a standalone mongo, it will use: w: 1
+func (self *DataSource) SetFieldsSafe(query interface{}, fieldsDoc interface{}) error {
+	session := self.SessionClone()
+	defer session.Close()
+
+	session.SetSafe(self.Mongo.DefaultSafe)
+
+	update := &bson.M{ "$set": fieldsDoc }
+
+	if err := self.RemoveNotFoundErr(session.DB(self.DbName).C(self.CollectionName).Update(query, update)); err != nil {
+		return NewStackError("Unable to SetFieldsSafe - db: %s - collection: %s - error: %v", self.DbName, self.CollectionName, err)
+	}
+
+	return nil
+}
+
+
 // Set a property using a "safe" operation. If this is a standalone mongo or a mongos, it will use: WMode: "majority".
 // If this is a standalone mongo, it will use: w: 1
 func (self *DataSource) SetFieldSafe(query interface{}, field string, value interface{}) error {
