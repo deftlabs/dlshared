@@ -64,6 +64,21 @@ func TestDataTypes(t *testing.T) {
 	}
 }
 
+// Confirm the way range behaves.
+func TestRange(t *testing.T) {
+
+	var test map[string]string
+
+	// This should not panic
+	for _, _ = range test { }
+
+	// Just to be clear again
+	test = nil
+
+	// This should not panic
+	for _, _ = range test { }
+}
+
 // Confirm the way maps behave.
 func TestMaps(t *testing.T) {
 
