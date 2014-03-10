@@ -286,3 +286,68 @@ func NewHttpContext(response http.ResponseWriter, request *http.Request) *HttpCo
 	return &HttpContext{ Response: response, Request: request, Params: make(map[string]*HttpParam) }
 }
 
+// This method returns true if the http request method is a HTTP post. If the
+// field missing or incorrect, false is returned. This method will panic if
+// the request is nil.
+func IsHttpMethodPost(request *http.Request) bool {
+	if request == nil {
+		panic("request param is nil")
+	}
+	return len(request.Method) > 0 && strings.ToUpper(request.Method) == HttpPostMethod
+}
+
+// Write an http ok response string. The content type is text/plain.
+func WriteOkResponseString(response http.ResponseWriter, msg string) error {
+	if response == nil {
+		return NewStackError("response param is nil")
+	}
+
+	msgLength := len(msg)
+
+	if msgLength == 0 {
+		return NewStackError("Response message is an empty string")
+	}
+
+	response.Header().Set(ContentTypeHeader, ContentTypeTextPlain)
+
+	written, err := response.Write([]byte(msg))
+
+	if err != nil {
+		return err
+	}
+
+	if written != msgLength {
+		return NewStackError("Did not write full message - bytes written %d - expected %d", written, msgLength)
+	}
+
+	return nil
+}
+
+// Encode and write a json response. If there is a problem encoding an http 500 is sent and an
+// error is returned. If there are problems writting the response an error is returned.
+func JsonEncodeAndWriteResponse(response http.ResponseWriter, value interface{}) error {
+
+	if value == nil {
+		return NewStackError("Nil value passed")
+	}
+
+	rawJson, err := json.Marshal(value)
+	if err != nil {
+		http.Error(response, "Error", 500)
+		return NewStackError("Unable to marshal json: %v", err)
+	}
+
+	response.Header().Set(ContentTypeHeader, ContentTypeJson)
+
+	written, err := response.Write(rawJson)
+	if err != nil {
+		return NewStackError("Unable to write response: %v", err)
+	}
+
+	if written != len(rawJson) {
+		return NewStackError("Unable to write full response - wrote: %d - expected: %d", written, len(rawJson))
+	}
+
+	return nil
+}
+
