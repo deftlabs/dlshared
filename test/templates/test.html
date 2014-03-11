@@ -1,0 +1,9 @@
+
+<table>
+	<tr><td>This is a row of: {{.Test}}</td></tr>
+
+	{{range $entry := .Entries}}
+	<tr><td><a href="{{$entry.Link}}">{{$entry.Text}}</a></td></tr>
+	{{end}}
+
+</table>

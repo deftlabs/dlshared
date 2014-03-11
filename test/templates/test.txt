@@ -1,0 +1,8 @@
+
+This is a line of: {{.Test}}
+
+Loop through some things:
+{{range $entry := .Entries}}
+Link: {{$entry.Link}}" - Text: {{$entry.Text}}
+{{end}}
+
