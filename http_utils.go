@@ -30,11 +30,13 @@ import (
 )
 
 const (
-	DefaultSocketTimeout = 40
+	DefaultSocketTimeout = 4000
 	HttpPostMethod = "POST"
 	HttpGetMethod = "GET"
 
 	ContentTypeHeader = "Content-Type"
+
+	NoStatusCode = -1 // This is the value used if an error is generated before the status code is available
 
 	ContentTypeTextPlain = "text/plain; charset=utf-8"
 	ContentTypePostForm = "application/x-www-form-urlencoded"
@@ -79,120 +81,129 @@ func NewHttpRequestClient(	disableKeepAlives,
 }
 
 // Post the values to the url.
-func (self *HttpRequestClient) Post(url string, values url.Values, headers map[string]string) ([]byte, error) {
+func (self *HttpRequestClient) Post(url string, values url.Values, headers map[string]string) (int, []byte, error) {
 
 	client, transport := self.getClientAndTransport()
 	defer transport.Close()
 
 	request, err := http.NewRequest(HttpPostMethod, url,  strings.NewReader(values.Encode()))
-	if err != nil { return nil, err }
+	if err != nil { return NoStatusCode, nil, err }
 
 	request.Header.Set(ContentTypeHeader, ContentTypePostForm)
 	for key, value := range headers { request.Header.Set(key, value) }
 
 	response, err := client.Do(request)
-	if err != nil { return nil, err }
+	if err != nil { return NoStatusCode, nil, err }
+
+	statusCode := response.StatusCode
 
 	defer response.Body.Close()
 
-	if data, err := ioutil.ReadAll(response.Body); err != nil { return nil, err
-	} else { return data, nil }
+	if data, err := ioutil.ReadAll(response.Body); err != nil { return statusCode, nil, err
+	} else { return statusCode, data, nil }
 }
 
 // Post the raw string to the url.
-func (self *HttpRequestClient) PostStr(url string, value string, headers map[string]string) ([]byte, error) {
+func (self *HttpRequestClient) PostStr(url string, value string, headers map[string]string) (int, []byte, error) {
 
 	client, transport := self.getClientAndTransport()
 	defer transport.Close()
 
 	request, err := http.NewRequest(HttpPostMethod, url, bytes.NewReader([]byte(value)))
-	if err != nil { return nil, err }
+	if err != nil { return NoStatusCode, nil, err }
 
 	request.Header.Set(ContentTypeHeader, ContentTypePostForm)
 	for key, value := range headers { request.Header.Set(key, value) }
 
 	response, err := client.Do(request)
-	if err != nil { return nil, err }
+	if err != nil { return NoStatusCode, nil, err }
+
+	statusCode := response.StatusCode
 
 	defer response.Body.Close()
 
-	if data, err := ioutil.ReadAll(response.Body); err != nil { return nil, err
-	} else { return data, nil }
+	if data, err := ioutil.ReadAll(response.Body); err != nil { return statusCode, nil, err
+	} else { return statusCode, data, nil }
 }
 
 // Post the json struct to the url.
-func (self *HttpRequestClient) PostJson(url string, value interface{}, headers map[string]string) ([]byte, error) {
+func (self *HttpRequestClient) PostJson(url string, value interface{}, headers map[string]string) (int, []byte, error) {
 
 	rawJson, err := json.Marshal(value)
-	if err != nil { return nil, err }
+	if err != nil { return NoStatusCode, nil, err }
 
 	client, transport := self.getClientAndTransport()
 	defer transport.Close()
 
 	request, err := http.NewRequest(HttpPostMethod, url, bytes.NewReader(rawJson))
-	if err != nil { return nil, err }
+	if err != nil { return NoStatusCode, nil, err }
 
 	request.Header.Set(ContentTypeHeader, ContentTypeJson)
 	for key, value := range headers { request.Header.Set(key, value) }
 
 	response, err := client.Do(request)
-	if err != nil { return nil, err }
+	if err != nil { return NoStatusCode, nil, err }
+
+	statusCode := response.StatusCode
 
 	defer response.Body.Close()
 
-	if data, err := ioutil.ReadAll(response.Body); err != nil { return nil, err
-	} else { return data, nil }
+	if data, err := ioutil.ReadAll(response.Body); err != nil { return statusCode, nil, err
+	} else { return statusCode, data, nil }
 }
 
 // Post the bson doc to the url.
-func (self *HttpRequestClient) PostBson(url string, bsonDoc interface{}, headers map[string]string) ([]byte, error) {
+func (self *HttpRequestClient) PostBson(url string, bsonDoc interface{}, headers map[string]string) (int, []byte, error) {
 
 	rawBson, err := bson.Marshal(bsonDoc)
-	if err != nil { return nil, err }
+	if err != nil { return NoStatusCode, nil, err }
 
 	client, transport := self.getClientAndTransport()
 	defer transport.Close()
 
 	request, err := http.NewRequest(HttpPostMethod, url, bytes.NewReader(rawBson))
-	if err != nil { return nil, err }
+	if err != nil { return NoStatusCode, nil, err }
 
 	request.Header.Set(ContentTypeHeader, ContentTypePostForm)
 	for key, value := range headers { request.Header.Set(key, value) }
 
 	response, err := client.Do(request)
-	if err != nil { return nil, err }
+	if err != nil { return NoStatusCode, nil, err }
+
+	statusCode := response.StatusCode
 
 	defer response.Body.Close()
 
 	// We do not return the response so don't report if there is an error.
-	if data, err := ioutil.ReadAll(response.Body); err != nil { return nil, err
-	} else { return data, nil }
+	if data, err := ioutil.ReadAll(response.Body); err != nil { return statusCode, nil, err
+	} else { return statusCode, data, nil }
 }
 
 // Issue a GET to retrieve a bson doc.
-func (self *HttpRequestClient) GetBson(url string, headers map[string]string) (bson.M, error) {
+func (self *HttpRequestClient) GetBson(url string, headers map[string]string) (int, bson.M, error) {
 
 	client, transport := self.getClientAndTransport()
 	defer transport.Close()
 
 	request, requestErr := http.NewRequest(HttpGetMethod, url, nil)
-	if requestErr != nil { return nil, requestErr }
+	if requestErr != nil { return NoStatusCode, nil, requestErr }
 
 	for key, value := range headers { request.Header.Set(key, value) }
 
 	response, err := client.Do(request)
+	if err != nil { return NoStatusCode, nil, err }
 
-	if err != nil { return nil, err }
+	statusCode := response.StatusCode
 
 	defer response.Body.Close()
 
 	rawBson, err := ioutil.ReadAll(response.Body)
-	if err != nil { return nil, err }
+	if err != nil { return statusCode, nil, err }
 
 	var bsonDoc bson.M
-	if err := bson.Unmarshal(rawBson, &bsonDoc); err != nil { return nil, err }
+	if err := bson.Unmarshal(rawBson, &bsonDoc); err != nil { return statusCode, nil, err }
 
-	return bsonDoc, nil
+	return statusCode, bsonDoc, nil
 }
 
 // Use the clone method if you need to override some/all of the configured values.
@@ -223,13 +234,13 @@ func (self *HttpRequestClient) getTransport() *httpclient.Transport {
 	}
 }
 
-func HttpPost(url string, values url.Values, headers map[string]string) ([]byte, error) { return NewDefaultHttpRequestClient().Post(url, values, headers) }
+func HttpPost(url string, values url.Values, headers map[string]string) (int, []byte, error) { return NewDefaultHttpRequestClient().Post(url, values, headers) }
 
-func HttpPostStr(url string, value string, headers map[string]string) ([]byte, error) { return NewDefaultHttpRequestClient().PostStr(url, value, headers) }
+func HttpPostStr(url string, value string, headers map[string]string) (int, []byte, error) { return NewDefaultHttpRequestClient().PostStr(url, value, headers) }
 
-func HttpPostJson(url string, value interface{}, headers map[string]string) ([]byte, error) { return NewDefaultHttpRequestClient().PostJson(url, value, headers) }
+func HttpPostJson(url string, value interface{}, headers map[string]string) (int, []byte, error) { return NewDefaultHttpRequestClient().PostJson(url, value, headers) }
 
-func HttpPostBson(url string, bsonDoc interface{}, headers map[string]string) ([]byte, error) { return NewDefaultHttpRequestClient().PostBson(url, bsonDoc, headers) }
+func HttpPostBson(url string, bsonDoc interface{}, headers map[string]string) (int, []byte, error) { return NewDefaultHttpRequestClient().PostBson(url, bsonDoc, headers) }
 
-func HttpGetBson(url string, headers map[string]string) (bson.M, error) { return NewDefaultHttpRequestClient().GetBson(url, headers) }
+func HttpGetBson(url string, headers map[string]string) (int, bson.M, error) { return NewDefaultHttpRequestClient().GetBson(url, headers) }
 
