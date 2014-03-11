@@ -58,6 +58,22 @@ type testJsonStruct struct {
 	Number float64
 }
 
+func TestHttpRequestClientClone(t *testing.T) {
+	client := NewDefaultHttpRequestClient()
+
+	clone := client.Clone()
+	clone.DisableKeepAlives = false
+	clone.MaxIdleConnsPerHost = 10000
+
+	if client.DisableKeepAlives == clone.DisableKeepAlives {
+		t.Errorf("TestHttpRequestClientClone is broken - values are equal")
+	}
+
+	if client.MaxIdleConnsPerHost == clone.MaxIdleConnsPerHost {
+		t.Errorf("TestHttpRequestClientClone is broken - values are equal")
+	}
+}
+
 func TestJsonEncodeAndWriteResponse(t *testing.T) {
 
 	response := NewRecordingResponseWriter()
