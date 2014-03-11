@@ -19,6 +19,7 @@ package dlshared
 import (
 	"fmt"
 	"net/url"
+	"net/http"
 )
 
 const (
@@ -61,11 +62,10 @@ func (self *Librato) SendMetricsToLibrato(sourceName string, metrics []Metric) {
 		}
 	}
 
-	var response []byte
-	var err error
-
-	if response, err = HttpPostJson(self.postMetricsUrl, msg, nil); err != nil {
+	if statusCode, response, err := HttpPostJson(self.postMetricsUrl, msg, nil); err != nil {
 		self.Logf(Warn, "Unable to send metrics to librato - error: %v - response: %s", err, string(response))
+	} else if statusCode != http.StatusOK {
+		self.Logf(Warn, "Non-200 status code returned by librato for post - response: %s", string(response))
 	}
 }
 
