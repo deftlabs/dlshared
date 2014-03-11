@@ -186,7 +186,7 @@ func newKernel(id, configFileName string) (*Kernel, error) {
 		return nil, err
 	}
 
-	logger := Logger { Prefix: id, Appenders: logAppenders }
+	logger := Logger{ Prefix: id, Appenders: logAppenders }
 
 	// Create the kernel
 	kernel := &Kernel{ Components : make(map[string]Component), Configuration : conf }
