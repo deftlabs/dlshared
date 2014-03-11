@@ -248,7 +248,9 @@ func (self *Email) Start(kernel *Kernel) error {
 	self.template = kernel.GetComponent(self.templateComponentName).(*Template)
 
 	// Create the capped collection to store the emails.
-	if self.cappedCollectionSizeInBytes > 0 { self.CreateCappedCollection(self.cappedCollectionSizeInBytes) }
+	if self.cappedCollectionSizeInBytes > 0 {
+		if err := self.CreateCappedCollection(self.cappedCollectionSizeInBytes); err != nil { return err }
+	}
 
 	if err := self.EnsureIndex([]string{ "sent" }); err != nil { return err }
 	if err := self.EnsureIndex([]string{ "toAddrs" }); err != nil { return err }
