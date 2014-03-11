@@ -17,6 +17,7 @@
 package dlshared
 
 import (
+	"time"
 	"labix.org/v2/mgo"
 	"labix.org/v2/mgo/bson"
 )
@@ -202,6 +203,22 @@ func (self *DataSource) EnsureSparseIndex(fields []string) error {
 // Create a capped collection.
 func (self *DataSource) CreateCappedCollection(sizeInBytes int) error {
 	return self.Collection().Create(&mgo.CollectionInfo{ DisableIdIndex: false, ForceIdIndex: true, Capped: true, MaxBytes: sizeInBytes })
+}
+
+// Create a ttl index.
+func (self *DataSource) EnsureTtlIndex(field string, expireAfterSeconds int) error {
+	if err := self.Collection().EnsureIndex(mgo.Index{
+		Key: []string{ field },
+		Unique: false,
+		DropDups: false,
+		Background: false,
+		Sparse: false,
+		ExpireAfter: time.Duration(expireAfterSeconds) * time.Second,
+	}); err != nil {
+		return NewStackError("Unable to EnsureTtlIndex - db: %s - collection: %s - error: %v", self.DbName, self.CollectionName, err)
+	}
+
+	return nil
 }
 
 // Ensure a unique, sparse index is created. This does not create in the background. This does
