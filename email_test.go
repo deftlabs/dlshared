@@ -22,8 +22,12 @@ import (
 )
 
 const (
-	EmailTestAccessKeyId = "HUH?"
-	EmailTestSecretAccessKey = "WHAT?"
+	//EmailTestAccessKeyId = ""
+	//EmailTestSecretAccessKey = ""
+
+	EmailTestAccessKeyId = "Huh?"
+	EmailTestSecretAccessKey = "What?"
+
 	EmailTestFrom = "Me <noreply@someplace.com>"
 	EmailTestTo = "you@someplace.com"
 )
@@ -38,7 +42,7 @@ func TestAwsTextEmail(t *testing.T) {
 	response, err := emailDs.SendTextEmailToOneAddress(EmailTestFrom, EmailTestTo, "test subject", "this is a test text body")
 
 	if err != nil {
-		t.Errorf("TestAwsTextEmail is broken: %v")
+		t.Errorf("TestAwsTextEmail is broken: %v", err)
 		return
 	}
 
@@ -61,7 +65,7 @@ func TestAwsHtmlEmail(t *testing.T) {
 	response, err := emailDs.SendHtmlEmailToOneAddress(EmailTestFrom, EmailTestTo, "test subject", bodyHtml, "Test Link: http://deftlabs.com")
 
 	if err != nil {
-		t.Errorf("TestAwsHtmlEmail is broken: %v")
+		t.Errorf("TestAwsHtmlEmail is broken: %v", err)
 		return
 	}
 
