@@ -199,6 +199,11 @@ func (self *DataSource) EnsureSparseIndex(fields []string) error {
 	return nil
 }
 
+// Create a capped collection.
+func (self *DataSource) CreateCappedCollection(sizeInBytes int) error {
+	return self.Collection().Create(&mgo.CollectionInfo{ DisableIdIndex: false, ForceIdIndex: true, Capped: true, MaxBytes: sizeInBytes })
+}
+
 // Ensure a unique, sparse index is created. This does not create in the background. This does
 // NOT drop duplicates if they exist. Duplicates will cause an error.
 func (self *DataSource) EnsureUniqueSparseIndex(fields []string) error {
