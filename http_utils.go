@@ -30,7 +30,7 @@ import (
 )
 
 const (
-	DefaultSocketTimeout = 4000
+	DefaultSocketTimeout = 40000
 	HttpPostMethod = "POST"
 	HttpGetMethod = "GET"
 
