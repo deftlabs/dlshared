@@ -23,13 +23,14 @@ import (
 	"time"
 	"bytes"
 	"strings"
+	"crypto/tls"
 	"labix.org/v2/mgo/bson"
 	"encoding/json"
 	"github.com/mreiferson/go-httpclient"
 )
 
 const (
-	SocketTimeout = 40
+	DefaultSocketTimeout = 40
 	HttpPostMethod = "POST"
 	HttpGetMethod = "GET"
 
@@ -40,217 +41,195 @@ const (
 	ContentTypeJson = "application/json"
 )
 
-func HttpPost(url string, values url.Values) ([]byte, error) {
+// The http request client allows you to configure global values for timeout/connect etc. It also
+// handles closing the transport and provides convenience methods for posting some types of data.
+type HttpRequestClient struct {
+	DisableKeepAlives bool
+	DisableCompression bool
+	SkipSslVerify bool
+	MaxIdleConnsPerHost int
+	ConnectTimeout time.Duration
+	ResponseHeaderTimeout time.Duration
+	RequestTimeout time.Duration
+	ReadWriteTimeout time.Duration
+}
 
-	httpClient, httpTransport := getDefaultHttpClient()
-	defer httpTransport.Close()
+func NewDefaultHttpRequestClient() *HttpRequestClient {
+	return NewHttpRequestClient(true, false, false, 0, DefaultSocketTimeout, DefaultSocketTimeout, DefaultSocketTimeout, DefaultSocketTimeout)
+}
 
-	response, err := httpClient.PostForm(url, values)
-	if err != nil {
-		return nil, err
-	}
+func NewHttpRequestClient(	disableKeepAlives,
+							disableCompression,
+							skipSslVerify bool,
+							maxIdleConnsPerHost,
+							connectTimeoutInMs,
+							responseHeaderTimeoutInMs,
+							requestTimeoutInMs,
+							readWriteTimeoutInMs int) *HttpRequestClient {
 
-	defer response.Body.Close()
-
-	if data, err := ioutil.ReadAll(response.Body); err != nil {
-		return nil, err
-	} else {
-		return data, nil
+	return &HttpRequestClient{ 	DisableKeepAlives: disableKeepAlives,
+								DisableCompression: disableCompression,
+								SkipSslVerify: skipSslVerify,
+								MaxIdleConnsPerHost: maxIdleConnsPerHost,
+								ConnectTimeout: time.Duration(connectTimeoutInMs) * time.Millisecond,
+								ResponseHeaderTimeout: time.Duration(responseHeaderTimeoutInMs) * time.Millisecond,
+								RequestTimeout: time.Duration(requestTimeoutInMs) * time.Millisecond,
+								ReadWriteTimeout: time.Duration(readWriteTimeoutInMs) * time.Millisecond,
 	}
 }
 
-func HttpPostStr(url string, value string) ([]byte, error) {
+// Post the values to the url.
+func (self *HttpRequestClient) Post(url string, values url.Values, headers map[string]string) ([]byte, error) {
 
-	httpClient, httpTransport := getDefaultHttpClient()
-	defer httpTransport.Close()
+	client, transport := self.getClientAndTransport()
+	defer transport.Close()
+
+	request, err := http.NewRequest(HttpPostMethod, url,  strings.NewReader(values.Encode()))
+	if err != nil { return nil, err }
+
+	request.Header.Set(ContentTypeHeader, ContentTypePostForm)
+	for key, value := range headers { request.Header.Set(key, value) }
+
+	response, err := client.Do(request)
+	if err != nil { return nil, err }
+
+	defer response.Body.Close()
+
+	if data, err := ioutil.ReadAll(response.Body); err != nil { return nil, err
+	} else { return data, nil }
+}
+
+// Post the raw string to the url.
+func (self *HttpRequestClient) PostStr(url string, value string, headers map[string]string) ([]byte, error) {
+
+	client, transport := self.getClientAndTransport()
+	defer transport.Close()
 
 	request, err := http.NewRequest(HttpPostMethod, url, bytes.NewReader([]byte(value)))
-	if err != nil {
-		return nil, err
-	}
-	request.Header.Set(ContentTypeHeader, ContentTypePostForm)
+	if err != nil { return nil, err }
 
-	response, err := httpClient.Do(request)
-	if err != nil {
-		return nil, err
-	}
+	request.Header.Set(ContentTypeHeader, ContentTypePostForm)
+	for key, value := range headers { request.Header.Set(key, value) }
+
+	response, err := client.Do(request)
+	if err != nil { return nil, err }
 
 	defer response.Body.Close()
 
-	if data, err := ioutil.ReadAll(response.Body); err != nil {
-		return nil, err
-	} else {
-		return data, nil
-	}
+	if data, err := ioutil.ReadAll(response.Body); err != nil { return nil, err
+	} else { return data, nil }
 }
 
-func HttpPostJson(url string, value interface{}) ([]byte, error) {
+// Post the json struct to the url.
+func (self *HttpRequestClient) PostJson(url string, value interface{}, headers map[string]string) ([]byte, error) {
 
 	rawJson, err := json.Marshal(value)
-	if err != nil {
-		return nil, err
-	}
+	if err != nil { return nil, err }
 
-	httpClient, httpTransport := getDefaultHttpClient()
-	defer httpTransport.Close()
+	client, transport := self.getClientAndTransport()
+	defer transport.Close()
 
 	request, err := http.NewRequest(HttpPostMethod, url, bytes.NewReader(rawJson))
-	if err != nil {
-		return nil, err
-	}
-	request.Header.Set(ContentTypeHeader, ContentTypeJson)
+	if err != nil { return nil, err }
 
-	response, err := httpClient.Do(request)
-	if err != nil {
-		return nil, err
-	}
+	request.Header.Set(ContentTypeHeader, ContentTypeJson)
+	for key, value := range headers { request.Header.Set(key, value) }
+
+	response, err := client.Do(request)
+	if err != nil { return nil, err }
 
 	defer response.Body.Close()
 
-	if data, err := ioutil.ReadAll(response.Body); err != nil {
-		return nil, err
-	} else {
-		return data, nil
-	}
+	if data, err := ioutil.ReadAll(response.Body); err != nil { return nil, err
+	} else { return data, nil }
 }
 
-func HttpPostBson(url string, bsonDoc interface{}) ([]byte, error) {
+// Post the bson doc to the url.
+func (self *HttpRequestClient) PostBson(url string, bsonDoc interface{}, headers map[string]string) ([]byte, error) {
 
 	rawBson, err := bson.Marshal(bsonDoc)
-	if err != nil {
-		return nil, err
-	}
+	if err != nil { return nil, err }
 
-	httpClient, httpTransport := getDefaultHttpClient()
-	defer httpTransport.Close()
+	client, transport := self.getClientAndTransport()
+	defer transport.Close()
 
-	request, err := http.NewRequest("POST", url, bytes.NewReader(rawBson))
-	if err != nil {
-		return nil, err
-	}
+	request, err := http.NewRequest(HttpPostMethod, url, bytes.NewReader(rawBson))
+	if err != nil { return nil, err }
+
 	request.Header.Set(ContentTypeHeader, ContentTypePostForm)
+	for key, value := range headers { request.Header.Set(key, value) }
 
-	response, err := httpClient.Do(request)
-	if err != nil {
-		return nil, err
-	}
+	response, err := client.Do(request)
+	if err != nil { return nil, err }
 
 	defer response.Body.Close()
 
 	// We do not return the response so don't report if there is an error.
-	if data, err := ioutil.ReadAll(response.Body); err != nil {
-		return nil, err
-	} else {
-		return data, nil
-	}
+	if data, err := ioutil.ReadAll(response.Body); err != nil { return nil, err
+	} else { return data, nil }
 }
 
-func getDefaultHttpClient() (*http.Client, *httpclient.Transport) {
-	transport := getDefaultHttpTransport()
-	return &http.Client{ Transport: transport }, transport
-}
+// Issue a GET to retrieve a bson doc.
+func (self *HttpRequestClient) GetBson(url string, headers map[string]string) (bson.M, error) {
 
-func getDefaultHttpTransport() *httpclient.Transport {
-	return &httpclient.Transport {
-		ConnectTimeout:        SocketTimeout * time.Second,
-		RequestTimeout:        SocketTimeout * time.Second,
-		ResponseHeaderTimeout: SocketTimeout * time.Second,
-	}
-}
-
-func HttpGetBson(url string) (bson.M, error) {
-
-	httpClient, httpTransport := getDefaultHttpClient()
-	defer httpTransport.Close()
+	client, transport := self.getClientAndTransport()
+	defer transport.Close()
 
 	request, requestErr := http.NewRequest(HttpGetMethod, url, nil)
-	if requestErr != nil {
-		return nil, requestErr
-	}
+	if requestErr != nil { return nil, requestErr }
 
-	response, err := httpClient.Do(request)
+	for key, value := range headers { request.Header.Set(key, value) }
 
-	if err != nil {
-		return nil, err
-	}
+	response, err := client.Do(request)
+
+	if err != nil { return nil, err }
 
 	defer response.Body.Close()
 
 	rawBson, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		return nil, err
-	}
+	if err != nil { return nil, err }
 
 	var bsonDoc bson.M
-	if err := bson.Unmarshal(rawBson, &bsonDoc); err != nil {
-		return nil, err
-	}
+	if err := bson.Unmarshal(rawBson, &bsonDoc); err != nil { return nil, err }
 
 	return bsonDoc, nil
 }
 
-// This method returns true if the http request method is a HTTP post. If the
-// field missing or incorrect, false is returned. This method will panic if
-// the request is nil.
-func IsHttpMethodPost(request *http.Request) bool {
-	if request == nil {
-		panic("request param is nil")
-	}
-	return len(request.Method) > 0 && strings.ToUpper(request.Method) == HttpPostMethod
+// Use the clone method if you need to override some/all of the configured values.
+func (self *HttpRequestClient) Clone() *HttpRequestClient {
+	val := *self
+	return &val
 }
 
-// Encode and write a json response. If there is a problem encoding an http 500 is sent and an
-// error is returned. If there are problems writting the response an error is returned.
-func JsonEncodeAndWriteResponse(response http.ResponseWriter, value interface{}) error {
-
-	if value == nil {
-		return NewStackError("Nil value passed")
-	}
-
-	rawJson, err := json.Marshal(value)
-	if err != nil {
-		http.Error(response, "Error", 500)
-		return NewStackError("Unable to marshal json: %v", err)
-	}
-
-	response.Header().Set(ContentTypeHeader, ContentTypeJson)
-
-	written, err := response.Write(rawJson)
-	if err != nil {
-		return NewStackError("Unable to write response: %v", err)
-	}
-
-	if written != len(rawJson) {
-		return NewStackError("Unable to write full response - wrote: %d - expected: %d", written, len(rawJson))
-	}
-
-	return nil
+func (self *HttpRequestClient) getClientAndTransport() (*http.Client, *httpclient.Transport) {
+	transport := self.getTransport()
+	return &http.Client{ Transport: transport }, transport
 }
 
-// Write an http ok response string. The content type is text/plain.
-func WriteOkResponseString(response http.ResponseWriter, msg string) error {
-	if response == nil {
-		return NewStackError("response param is nil")
+func (self *HttpRequestClient) getTransport() *httpclient.Transport {
+	return &httpclient.Transport {
+
+		DisableKeepAlives: self.DisableKeepAlives,
+		DisableCompression: self.DisableCompression,
+
+		MaxIdleConnsPerHost: self.MaxIdleConnsPerHost,
+
+		ConnectTimeout: self.ConnectTimeout,
+		ResponseHeaderTimeout: self.ResponseHeaderTimeout,
+		RequestTimeout: self.RequestTimeout,
+		ReadWriteTimeout: self.ReadWriteTimeout,
+
+		TLSClientConfig: &tls.Config{ InsecureSkipVerify: self.SkipSslVerify },
 	}
-
-	msgLength := len(msg)
-
-	if msgLength == 0 {
-		return NewStackError("Response message is an empty string")
-	}
-
-	response.Header().Set(ContentTypeHeader, ContentTypeTextPlain)
-
-	written, err := response.Write([]byte(msg))
-
-	if err != nil {
-		return err
-	}
-
-	if written != msgLength {
-		return NewStackError("Did not write full message - bytes written %d - expected %d", written, msgLength)
-	}
-
-	return nil
 }
+
+func HttpPost(url string, values url.Values, headers map[string]string) ([]byte, error) { return NewDefaultHttpRequestClient().Post(url, values, headers) }
+
+func HttpPostStr(url string, value string, headers map[string]string) ([]byte, error) { return NewDefaultHttpRequestClient().PostStr(url, value, headers) }
+
+func HttpPostJson(url string, value interface{}, headers map[string]string) ([]byte, error) { return NewDefaultHttpRequestClient().PostJson(url, value, headers) }
+
+func HttpPostBson(url string, bsonDoc interface{}, headers map[string]string) ([]byte, error) { return NewDefaultHttpRequestClient().PostBson(url, bsonDoc, headers) }
+
+func HttpGetBson(url string, headers map[string]string) (bson.M, error) { return NewDefaultHttpRequestClient().GetBson(url, headers) }
 
