@@ -16,8 +16,10 @@
 
 package dlshared
 
-import "testing"
-import "fmt"
+import (
+	// "fmt"
+	"testing"
+)
 
 const (
 	EmailTestAccessKeyId = "HUH?"
