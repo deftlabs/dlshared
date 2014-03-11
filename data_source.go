@@ -221,6 +221,11 @@ func (self *DataSource) EnsureTtlIndex(field string, expireAfterSeconds int) err
 	return nil
 }
 
+func (self *DataSource) Now() *time.Time {
+	now := time.Now()
+	return &now
+}
+
 // Ensure a unique, sparse index is created. This does not create in the background. This does
 // NOT drop duplicates if they exist. Duplicates will cause an error.
 func (self *DataSource) EnsureUniqueSparseIndex(fields []string) error {
