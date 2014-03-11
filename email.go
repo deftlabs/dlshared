@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  *
- * Some of the initial code came from: https://github.com/sourcegraph/go-ses/blob/master/ses.go
+ * Some of the initial SES code came from: https://github.com/sourcegraph/go-ses/blob/master/ses.go
  * Copyright 2013 SourceGraph, Inc.
  * Copyright 2011-2013 Numrotron Inc.
  * Use of this source code is governed by an MIT-style license
@@ -32,18 +32,24 @@ import (
 	"crypto/sha256"
 	"encoding/xml"
 	"encoding/base64"
+	"labix.org/v2/mgo/bson"
 )
 
-const (
-	AwsSesEndpoint = "https://email.us-east-1.amazonaws.com"
-)
+// -----------------------------------------------------------------------------
+// The email ds interface
 
 type EmailDs interface {
 	SendTextEmailToOneAddress(from, to, subject, body string) (interface{}, error)
 	SendHtmlEmailToOneAddress(from, to, subject, bodyHtml, bodyText string) (interface{}, error)
 }
 
+// -----------------------------------------------------------------------------
 // The AWS SES email ds.
+
+const (
+	AwsSesEndpoint = "https://email.us-east-1.amazonaws.com"
+)
+
 type AwsEmailDs struct {
 	Logger
 	accessKeyId string
@@ -128,4 +134,137 @@ func (self *AwsEmailDs) postEmailToSes(data url.Values) (interface{}, error) {
 
 	return awsResponse, nil
 }
+
+// -----------------------------------------------------------------------------
+// The email service
+
+type EmailDoc struct {
+
+	Id bson.ObjectId `bson:"_id"`
+
+	HtmlTemplateName string `bson:"htmlTemplateName,omitempty"`
+	TextTemplateName string `bson:"textTemplateName,omitempty"`
+
+	SendMethod string `bson:"sendMethod"`
+
+	EmailType string `bson:"type"`
+
+	MessageId string `bson:"messageId,omitempty"`
+	RequestId string `bson:"requestId,omitempty"`
+	HttpStatusCode int `bson:"httpStatusCode,omitempty"`
+
+	ToAddrs []string `bson:"toAddrs"`
+	FromAddr string `bson:"fromAddr"`
+	Sent *time.Time `bson:"sent"`
+
+	Subject string `bson:"subject"`
+	BodyHtml string `bson:"bodyHtml"`
+	BodyText string `bson:"bodyText"`
+
+	Error string `bson:"error,omitempty"`
+}
+
+// Create a new email service. Set cappedCollectionSizeInBytes to less than one to create a permanent collection
+// (i.e., otherwise it creates a capped collection). Currently, the email service only supports sending via
+// AWS SES.
+func NewAwsEmail(	dbComponentName,
+					templateComponentName,
+					dbName, collectionName,
+					awsAccessKeyId,
+					awsSecretKey string,
+					cappedCollectionSizeInBytes int) *Email {
+	return &Email{
+		Logger: Logger{},
+		DataSource: DataSource{ DbName: dbName, CollectionName: collectionName },
+		dbComponentName: dbComponentName,
+		templateComponentName: templateComponentName,
+		cappedCollectionSizeInBytes: cappedCollectionSizeInBytes,
+		awsEmailDs: NewAwsEmailDs(awsAccessKeyId, awsSecretKey, NewDefaultHttpRequestClient(), Logger{}),
+	}
+}
+
+type Email struct {
+	Logger
+	DataSource
+	dbComponentName string
+	templateComponentName string
+	cappedCollectionSizeInBytes int
+	awsEmailDs *AwsEmailDs
+	template *Template
+}
+
+func (self *Email) storeEmail(from, to, subject, htmlTemplateFileName, textTemplateFileName, bodyHtml, bodyText string, response interface{}, err error) {
+	now := time.Now()
+
+	doc := &EmailDoc{ 	HtmlTemplateName: htmlTemplateFileName,
+						TextTemplateName: textTemplateFileName,
+						SendMethod: "AWS-SES",
+						EmailType: "html",
+						ToAddrs: []string{ to },
+						FromAddr: from,
+						Sent: &now,
+						Subject: subject,
+						BodyHtml: bodyHtml,
+						BodyText: bodyText,
+	}
+
+	if err != nil { doc.Error = err.Error() }
+
+	if response != nil {
+		r := response.(*AwsEmailResponse)
+		doc.MessageId = r.MessageId
+		doc.RequestId = r.RequestId
+		doc.HttpStatusCode = r.HttpStatusCode
+	}
+
+	if err := self.Insert(doc); err != nil { self.Logf(Warn, "Unable to store email doc: %v", err) }
+}
+
+// Send an html email.
+func (self *Email) SendHtmlEmailToOneAddress(from, to, subject, htmlTemplateFileName, textTemplateFileName string, params map[string]interface{}) error {
+
+	// Render the templates.
+
+	bodyHtml, bodyText, err := self.template.RenderHtmlAndText(htmlTemplateFileName, textTemplateFileName, params)
+
+	// Send the email to the user.
+	response, err := self.awsEmailDs.SendHtmlEmailToOneAddress(from, to, subject, bodyHtml, bodyText)
+	if err != nil {
+		self.storeEmail(from, to, subject, htmlTemplateFileName, textTemplateFileName, bodyHtml, bodyText, response, err)
+		return err
+	}
+
+	self.storeEmail(from, to, subject, htmlTemplateFileName, textTemplateFileName, bodyHtml, bodyText, response, nil)
+
+	return nil
+}
+
+func (self *Email) Start(kernel *Kernel) error {
+
+	self.Logger = kernel.Logger
+	self.awsEmailDs.Logger = self.Logger
+
+	self.Mongo = kernel.GetComponent(self.dbComponentName).(*Mongo)
+	self.template = kernel.GetComponent(self.templateComponentName).(*Template)
+
+	// Create the capped collection to store the emails.
+	if self.cappedCollectionSizeInBytes > 0 { self.CreateCappedCollection(self.cappedCollectionSizeInBytes) }
+
+	if err := self.EnsureIndex([]string{ "sent" }); err != nil { return err }
+	if err := self.EnsureIndex([]string{ "toAddrs" }); err != nil { return err }
+
+	if err := self.EnsureIndex([]string{ "toAddrs", "sent"  }); err != nil { return err }
+
+	if err := self.EnsureSparseIndex([]string{ "messageId" }); err != nil { return err }
+	if err := self.EnsureSparseIndex([]string{ "requestId" }); err != nil { return err }
+
+	return nil
+}
+
+func (self *Email) Stop(kernel *Kernel) error {
+
+	return nil
+}
+
+
 
