@@ -202,7 +202,8 @@ type AwsEmailSvc struct {
 func (self *AwsEmailSvc) storeEmail(from, to, subject, htmlTemplateFileName, textTemplateFileName, bodyHtml, bodyText string, response interface{}, err error) {
 	now := time.Now()
 
-	doc := &EmailDoc{ 	HtmlTemplateName: htmlTemplateFileName,
+	doc := &EmailDoc{	Id: bson.NewObjectId(),
+						HtmlTemplateName: htmlTemplateFileName,
 						TextTemplateName: textTemplateFileName,
 						SendMethod: "AWS-SES",
 						EmailType: "html",
