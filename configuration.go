@@ -25,44 +25,27 @@ type Configuration struct {
 
 	Version string
 	PidFile string
-
 	Pid int
-
-	data *ljconf.Conf
-
 	Environment string
-
 	Hostname string
 	FileName string
+
+	data *ljconf.Conf
 }
 
-func (self *Configuration) String(key string, def string) string {
-	return self.data.String(key, def)
-}
+func (self *Configuration) String(key string, def string) string { return self.data.String(key, def) }
 
-func (self *Configuration) Int(key string, def int) int {
-	return self.data.Int(key, def)
-}
+func (self *Configuration) Int(key string, def int) int { return self.data.Int(key, def) }
 
-func (self *Configuration) Bool(key string, def bool) bool {
-	return self.data.Bool(key, def)
-}
+func (self *Configuration) Bool(key string, def bool) bool { return self.data.Bool(key, def) }
 
-func (self *Configuration) Float(key string, def float64) float64 {
-	return self.data.Float(key, def)
-}
+func (self *Configuration) Float(key string, def float64) float64 { return self.data.Float(key, def) }
 
-func (self *Configuration) StrList(key string, def [] string) []string {
-	return self.data.StringList(key, def)
-}
+func (self *Configuration) StrList(key string, def [] string) []string { return self.data.StringList(key, def) }
 
-func (self *Configuration) IntList(key string, def []int) []int {
-	return self.data.IntList(key, def)
-}
+func (self *Configuration) IntList(key string, def []int) []int { return self.data.IntList(key, def) }
 
-func (self *Configuration) EnvironmentIs(expected string) bool {
-	return self.Environment == expected
-}
+func (self *Configuration) EnvironmentIs(expected string) bool { return self.Environment == expected }
 
 func NewConfiguration(fileName string) (*Configuration, error) {
 
@@ -70,7 +53,7 @@ func NewConfiguration(fileName string) (*Configuration, error) {
 
 	var err error
 	if conf.data, err = ljconf.Load(fileName); err != nil {
-		return nil, err
+		return nil, NewStackError("Unable to load configuration file - error: %v", err)
 	}
 
 	conf.PidFile = conf.data.String("pidFile", "")
@@ -87,7 +70,7 @@ func NewConfiguration(fileName string) (*Configuration, error) {
 
 	conf.Hostname, err = os.Hostname()
 	if err != nil {
-		return nil, err
+		return nil, NewStackError("Unable to load hostname - error: %v", err)
 	}
 
 	if len(conf.Version) == 0 {
