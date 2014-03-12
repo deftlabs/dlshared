@@ -18,6 +18,7 @@ package dlshared
 
 import (
 	"time"
+	"strings"
 	"labix.org/v2/mgo"
 	"labix.org/v2/mgo/bson"
 )
@@ -202,7 +203,17 @@ func (self *DataSource) EnsureSparseIndex(fields []string) error {
 
 // Create a capped collection.
 func (self *DataSource) CreateCappedCollection(sizeInBytes int) error {
-	return self.Collection().Create(&mgo.CollectionInfo{ DisableIdIndex: false, ForceIdIndex: true, Capped: true, MaxBytes: sizeInBytes })
+	if err := self.Collection().Create(&mgo.CollectionInfo{ DisableIdIndex: false, ForceIdIndex: true, Capped: true, MaxBytes: sizeInBytes }); err != nil {
+
+		// This is a bit of a hack, but the error returned does not provide any codes.
+		msg := strings.ToLower(err.Error())
+		if strings.Contains(msg, "already") || strings.Contains(msg, "exists") { return nil }
+
+		return NewStackError("Unable to CreateCappedCollection - db: %s - collection: %s - error: %v", self.DbName, self.CollectionName, err)
+
+	} else {
+		return nil
+	}
 }
 
 // Create a ttl index.
