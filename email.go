@@ -27,7 +27,7 @@ import (
 	"time"
 	"errors"
 	"net/url"
-	//"net/http"
+	"net/http"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/xml"
@@ -122,16 +122,15 @@ func (self *AwsEmailDs) postEmailToSes(data url.Values) (interface{}, error) {
 
 	awsResponse := &AwsEmailResponse{ HttpStatusCode: httpStatusCode }
 
-	/*
-	if httpStatusCode != http.StatusOK {
-		return awsResponse, errors.New(fmt.Sprintf("Non-200 http error code returned from Aws SES post - status code: %d", httpStatusCode))
-	}
-	*/
-
 	// Parse the response.
 	err = xml.Unmarshal(response, &awsResponse)
 	if err != nil {
 		return awsResponse, errors.New(fmt.Sprintf("Unable to parse Aws SES response - raw: %s - error: %v", string(response), err))
+	}
+
+	// Create an error if the status is not ok/200.
+	if httpStatusCode != http.StatusOK {
+		return awsResponse, errors.New(fmt.Sprintf("Non-200 http error code returned from Aws SES post - status code: %d - raw: %s", httpStatusCode, string(response)))
 	}
 
 	return awsResponse, nil
