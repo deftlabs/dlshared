@@ -138,6 +138,12 @@ func (self *AwsEmailDs) postEmailToSes(data url.Values) (interface{}, error) {
 // -----------------------------------------------------------------------------
 // The email service
 
+type EmailSvc interface {
+	SendHtmlEmailToOneAddress(from, to, subject, htmlTemplateFileName, textTemplateFileName string, params map[string]interface{}) error
+	Start(kernel *Kernel) error
+	Stop(kernel *Kernel) error
+}
+
 type EmailDoc struct {
 
 	Id bson.ObjectId `bson:"_id"`
@@ -167,13 +173,13 @@ type EmailDoc struct {
 // Create a new email service. Set cappedCollectionSizeInBytes to less than one to create a permanent collection
 // (i.e., otherwise it creates a capped collection). Currently, the email service only supports sending via
 // AWS SES.
-func NewAwsEmail(	dbComponentName,
+func NewAwsEmailSvc(dbComponentName,
 					templateComponentName,
 					dbName, collectionName,
 					awsAccessKeyId,
 					awsSecretKey string,
-					cappedCollectionSizeInBytes int) *Email {
-	return &Email{
+					cappedCollectionSizeInBytes int) EmailSvc {
+	return &AwsEmailSvc{
 		Logger: Logger{},
 		DataSource: DataSource{ DbName: dbName, CollectionName: collectionName },
 		dbComponentName: dbComponentName,
@@ -183,17 +189,17 @@ func NewAwsEmail(	dbComponentName,
 	}
 }
 
-type Email struct {
+type AwsEmailSvc struct {
 	Logger
 	DataSource
 	dbComponentName string
 	templateComponentName string
 	cappedCollectionSizeInBytes int
 	awsEmailDs *AwsEmailDs
-	template *Template
+	templateSvc *TemplateSvc
 }
 
-func (self *Email) storeEmail(from, to, subject, htmlTemplateFileName, textTemplateFileName, bodyHtml, bodyText string, response interface{}, err error) {
+func (self *AwsEmailSvc) storeEmail(from, to, subject, htmlTemplateFileName, textTemplateFileName, bodyHtml, bodyText string, response interface{}, err error) {
 	now := time.Now()
 
 	doc := &EmailDoc{ 	HtmlTemplateName: htmlTemplateFileName,
@@ -221,11 +227,11 @@ func (self *Email) storeEmail(from, to, subject, htmlTemplateFileName, textTempl
 }
 
 // Send an html email.
-func (self *Email) SendHtmlEmailToOneAddress(from, to, subject, htmlTemplateFileName, textTemplateFileName string, params map[string]interface{}) error {
+func (self *AwsEmailSvc) SendHtmlEmailToOneAddress(from, to, subject, htmlTemplateFileName, textTemplateFileName string, params map[string]interface{}) error {
 
 	// Render the templates.
 
-	bodyHtml, bodyText, err := self.template.RenderHtmlAndText(htmlTemplateFileName, textTemplateFileName, params)
+	bodyHtml, bodyText, err := self.templateSvc.RenderHtmlAndText(htmlTemplateFileName, textTemplateFileName, params)
 
 	// Send the email to the user.
 	response, err := self.awsEmailDs.SendHtmlEmailToOneAddress(from, to, subject, bodyHtml, bodyText)
@@ -239,13 +245,13 @@ func (self *Email) SendHtmlEmailToOneAddress(from, to, subject, htmlTemplateFile
 	return nil
 }
 
-func (self *Email) Start(kernel *Kernel) error {
+func (self *AwsEmailSvc) Start(kernel *Kernel) error {
 
 	self.Logger = kernel.Logger
 	self.awsEmailDs.Logger = self.Logger
 
 	self.Mongo = kernel.GetComponent(self.dbComponentName).(*Mongo)
-	self.template = kernel.GetComponent(self.templateComponentName).(*Template)
+	self.templateSvc = kernel.GetComponent(self.templateComponentName).(*TemplateSvc)
 
 	// Create the capped collection to store the emails.
 	if self.cappedCollectionSizeInBytes > 0 {
@@ -263,10 +269,5 @@ func (self *Email) Start(kernel *Kernel) error {
 	return nil
 }
 
-func (self *Email) Stop(kernel *Kernel) error {
-
-	return nil
-}
-
-
+func (self *AwsEmailSvc) Stop(kernel *Kernel) error { return nil }
 

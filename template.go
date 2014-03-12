@@ -22,32 +22,32 @@ import (
 	htmltemplate "html/template"
 )
 
-type Template struct {
-	baseTemplateDir string
+type TemplateSvc struct {
+	baseTemplateSvcDir string
 }
 
 // Create a new template service struct. This simplifies
 // accessing and rendering templates. End your base template directory with a slash (/).
-func NewTemplate(baseTemplateDir string) *Template {
-	return &Template{ baseTemplateDir: baseTemplateDir }
+func NewTemplateSvc(baseTemplateSvcDir string) *TemplateSvc {
+	return &TemplateSvc{ baseTemplateSvcDir: baseTemplateSvcDir }
 }
 
 // The html template output is the first param and the text is the second param.
-func (self *Template) RenderHtmlAndText(htmlTemplateFileName, textTemplateFileName string, params interface{}) (bodyHtml, bodyText string, err error) {
+func (self *TemplateSvc) RenderHtmlAndText(htmlTemplateSvcFileName, textTemplateSvcFileName string, params interface{}) (bodyHtml, bodyText string, err error) {
 
-	bodyHtml, err = self.RenderHtml(htmlTemplateFileName, params)
+	bodyHtml, err = self.RenderHtml(htmlTemplateSvcFileName, params)
 	if err != nil { return }
 
-	bodyText, err = self.RenderText(textTemplateFileName, params)
+	bodyText, err = self.RenderText(textTemplateSvcFileName, params)
 	if err != nil { return }
 
 	return
 }
 
-// The template file name should not start with a slash and be under the baseTemplateDir
-func (self *Template) RenderHtml(templateFileName string, params interface{}) (string, error) {
+// The template file name should not start with a slash and be under the baseTemplateSvcDir
+func (self *TemplateSvc) RenderHtml(templateFileName string, params interface{}) (string, error) {
 
-	template, err := htmltemplate.ParseFiles(self.baseTemplateDir + templateFileName)
+	template, err := htmltemplate.ParseFiles(self.baseTemplateSvcDir + templateFileName)
 	if err != nil { return nadaStr, err }
 
 	var out bytes.Buffer
@@ -55,10 +55,10 @@ func (self *Template) RenderHtml(templateFileName string, params interface{}) (s
 	return out.String(), nil
 }
 
-// The template file name should not start with a slash and be under the baseTemplateDir
-func (self *Template) RenderText(templateFileName string, params interface{}) (string, error) {
+// The template file name should not start with a slash and be under the baseTemplateSvcDir
+func (self *TemplateSvc) RenderText(templateFileName string, params interface{}) (string, error) {
 
-	template, err := texttemplate.ParseFiles(self.baseTemplateDir + templateFileName)
+	template, err := texttemplate.ParseFiles(self.baseTemplateSvcDir + templateFileName)
 	if err != nil { return nadaStr, err }
 
 	var out bytes.Buffer

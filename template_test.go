@@ -41,9 +41,9 @@ func initTemplateTestParams() map[string]interface{} {
 
 func TestRenderHtml(t *testing.T) {
 
-	template := NewTemplate("test/templates/")
+	templateSvc := NewTemplateSvc("test/templates/")
 
-	response, err := template.RenderHtml("test.html", initTemplateTestParams())
+	response, err := templateSvc.RenderHtml("test.html", initTemplateTestParams())
 
 	if err != nil {
 		t.Errorf("TestRenderHtml is broken: %v", err)
@@ -57,9 +57,9 @@ func TestRenderHtml(t *testing.T) {
 
 func TestRenderText(t *testing.T) {
 
-	template := NewTemplate("test/templates/")
+	templateSvc := NewTemplateSvc("test/templates/")
 
-	response, err := template.RenderText("test.txt", initTemplateTestParams())
+	response, err := templateSvc.RenderText("test.txt", initTemplateTestParams())
 
 	if err != nil {
 		t.Errorf("TestRenderText is broken: %v", err)
