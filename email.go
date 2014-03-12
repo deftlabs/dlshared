@@ -163,9 +163,9 @@ type EmailDoc struct {
 	FromAddr string `bson:"fromAddr"`
 	Sent *time.Time `bson:"sent"`
 
-	Subject string `bson:"subject"`
-	BodyHtml string `bson:"bodyHtml"`
-	BodyText string `bson:"bodyText"`
+	Subject []byte `bson:"subject"`
+	BodyHtml []byte `bson:"bodyHtml"`
+	BodyText []byte `bson:"bodyText"`
 
 	Error string `bson:"error,omitempty"`
 }
@@ -202,6 +202,15 @@ type AwsEmailSvc struct {
 func (self *AwsEmailSvc) storeEmail(from, to, subject, htmlTemplateFileName, textTemplateFileName, bodyHtml, bodyText string, response interface{}, err error) {
 	now := time.Now()
 
+	compressedBodyHtml, err := CompressBytes([]byte(bodyHtml))
+	if err != nil { self.Logf(Warn, "Unable to compress html body: %v", err) }
+
+	compressedBodyTxt, err := CompressBytes([]byte(bodyText))
+	if err != nil { self.Logf(Warn, "Unable to compress text body: %v", err) }
+
+	compressedSubject, err := CompressBytes([]byte(subject))
+	if err != nil { self.Logf(Warn, "Unable to compress subject: %v", err) }
+
 	doc := &EmailDoc{	Id: bson.NewObjectId(),
 						HtmlTemplateName: htmlTemplateFileName,
 						TextTemplateName: textTemplateFileName,
@@ -210,9 +219,9 @@ func (self *AwsEmailSvc) storeEmail(from, to, subject, htmlTemplateFileName, tex
 						ToAddrs: []string{ to },
 						FromAddr: from,
 						Sent: &now,
-						Subject: subject,
-						BodyHtml: bodyHtml,
-						BodyText: bodyText,
+						Subject: compressedSubject,
+						BodyHtml: compressedBodyHtml,
+						BodyText: compressedBodyTxt,
 	}
 
 	if err != nil { doc.Error = err.Error() }
@@ -231,7 +240,6 @@ func (self *AwsEmailSvc) storeEmail(from, to, subject, htmlTemplateFileName, tex
 func (self *AwsEmailSvc) SendHtmlEmailToOneAddress(from, to, subject, htmlTemplateFileName, textTemplateFileName string, params map[string]interface{}) error {
 
 	// Render the templates.
-
 	bodyHtml, bodyText, err := self.templateSvc.RenderHtmlAndText(htmlTemplateFileName, textTemplateFileName, params)
 
 	// Send the email to the user.
