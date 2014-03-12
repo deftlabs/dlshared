@@ -50,12 +50,12 @@ func TestGetFunctionName(t *testing.T) {
 	}
 
 	testFunc := func() { }
-	if GetFunctionName(testFunc) != "dlshared.func·013" && GetFunctionName(testFunc) != "workspace.func·013"  {
-		t.Errorf("TestGetFunctionName failed - expected: func·013 - received: %s", GetFunctionName(testFunc))
+	if GetFunctionName(testFunc) != "dlshared.func·010" && GetFunctionName(testFunc) != "workspace.func·010"  {
+		t.Errorf("TestGetFunctionName failed - expected: func·010 - received: %s", GetFunctionName(testFunc))
 	}
 }
 
-// Note: if you add more tests, you must update the last test (dlshared.func·013).
+// Note: if you add more tests, you must update the last test (dlshared.func·010).
 type Foo struct {
 
 }
