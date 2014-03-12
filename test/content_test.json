@@ -1,0 +1,11 @@
+{
+	"greetings": {
+		"generic": {
+			"hello": {
+				"en_US": "Hello",
+				"de_DE": "Hallo",
+				"pt_BR": "Olá"
+			}
+		}
+	}
+}
