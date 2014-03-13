@@ -17,16 +17,19 @@
 package dlshared
 
 import (
+	"bytes"
 	"net/url"
 	"net/http"
 )
-
 
 func NewTestHttpPostRequest() *http.Request {
 	request := &http.Request{ Method : "POST" }
 	request.URL, _ = url.Parse("http://www.google.com/search?q=foo&q=bar")
 	return request
 }
+
+type TestReadCloserBuffer struct { *bytes.Buffer }
+func (self *TestReadCloserBuffer) Close() error { return nil }
 
 type RecordingResponseWriter struct {
 	header http.Header
