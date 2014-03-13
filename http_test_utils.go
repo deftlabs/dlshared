@@ -16,7 +16,17 @@
 
 package dlshared
 
-import "net/http"
+import (
+	"net/url"
+	"net/http"
+)
+
+
+func NewTestHttpPostRequest() *http.Request {
+	request := &http.Request{ Method : "POST" }
+	request.URL, _ = url.Parse("http://www.google.com/search?q=foo&q=bar")
+	return request
+}
 
 type RecordingResponseWriter struct {
 	header http.Header
