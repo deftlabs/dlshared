@@ -112,6 +112,14 @@ func (self *HttpContext) ParamsAreValid() bool {
 	return len(self.ErrorCodes) == 0
 }
 
+func (self *HttpContext) ParamInt(name string) int { return self.Params[name].Int() }
+
+func (self *HttpContext) ParamFloat(name string) float64 { return self.Params[name].Float() }
+
+func (self *HttpContext) ParamString(name string) string { return self.Params[name].String() }
+
+func (self *HttpContext) ParamBool(name string) bool { return self.Params[name].Bool() }
+
 func (self *HttpContext) HasRawErrors() bool { return len(self.Errors) > 0 }
 
 // This returns the param value as a string. If the param is missing or empty,
