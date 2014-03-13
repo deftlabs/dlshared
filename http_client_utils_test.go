@@ -23,35 +23,6 @@ import (
 	"encoding/json"
 )
 
-type RecordingResponseWriter struct {
-	header http.Header
-	HeaderCode int
-	Data []byte
-}
-
-func (self *RecordingResponseWriter) reset() {
-	self.header = make(map[string][]string)
-	self.HeaderCode = 0
-	self.Data = nil
-}
-
-func (self *RecordingResponseWriter) Header() http.Header {
-	return self.header
-}
-
-func (self *RecordingResponseWriter) Write(data []byte) (int, error) {
-	self.Data = append(self.Data, data...)
-	return len(data), nil
-}
-
-func NewRecordingResponseWriter() *RecordingResponseWriter {
-	return &RecordingResponseWriter{ header : make(map[string][]string) }
-}
-
-func (self *RecordingResponseWriter) WriteHeader(code int) {
-	self.HeaderCode = code
-}
-
 type testJsonStruct struct {
 	String string
 	Boolean bool
