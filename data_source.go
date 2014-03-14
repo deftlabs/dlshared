@@ -30,6 +30,11 @@ type DataSource struct {
 	Logger
 }
 
+func (self *DataSource) NewObjectId() *bson.ObjectId {
+	id := bson.NewObjectId()
+	return &id
+}
+
 // Insert a document into a collection with the base configured write concern.
 func (self *DataSource) Insert(doc interface{}) error {
 	if err := self.Mongo.Collection(self.DbName, self.CollectionName).Insert(doc); err != nil {
