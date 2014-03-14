@@ -183,6 +183,8 @@ func retrieveJsonParamValue(ctx *HttpContext, param *HttpParam) string {
 }
 
 func appendInvalidErrorCode(ctx *HttpContext, param *HttpParam) {
+	// Do not dupplicate error codes.
+	for i := range ctx.ErrorCodes { if ctx.ErrorCodes[i] == param.InvalidErrorCode { return } }
 	ctx.ErrorCodes = append(ctx.ErrorCodes, param.InvalidErrorCode)
 	param.Valid = false
 }
