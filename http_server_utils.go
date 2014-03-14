@@ -92,13 +92,9 @@ func (self *HttpParam) setPresentValue(value interface{}) {
 // returns "true". If there are raw data extraction errors, this is always false (e.g., body missing or incorrect).
 func (self *HttpContext) ParamsAreValid() bool {
 
-	if len(self.Errors) != 0 {
-		return false
-	}
+	if len(self.Errors) != 0 { return false }
 
-	if len(self.Params) == 0 {
-		return true
-	}
+	if len(self.Params) == 0 { return true }
 
 	for _, param := range self.Params {
 		switch param.DataType {
