@@ -100,7 +100,24 @@ func (self *DataSource) SetFieldsSafe(query interface{}, fieldsDoc interface{}) 
 	return nil
 }
 
-// Add to set call using a "safe" operation. If this is a standalone mongo or a mongos, it will use: WMode: "majority".
+// Pull from an array call using a "safe" operation. If this is a standalone mongo or a mongos, it will use: WMode: "majority".
+// If this is a standalone mongo, it will use: w: 1
+func (self *DataSource) PullSafe(query interface{}, fieldsDoc interface{}) error {
+	session := self.SessionClone()
+	defer session.Close()
+
+	session.SetSafe(self.Mongo.DefaultSafe)
+
+	update := &bson.M{ "$pull": fieldsDoc }
+
+	if err := self.RemoveNotFoundErr(session.DB(self.DbName).C(self.CollectionName).Update(query, update)); err != nil {
+		return NewStackError("Unable to PullSafe - db: %s - collection: %s - error: %v", self.DbName, self.CollectionName, err)
+	}
+
+	return nil
+}
+
+// Push to an array call using a "safe" operation. If this is a standalone mongo or a mongos, it will use: WMode: "majority".
 // If this is a standalone mongo, it will use: w: 1
 func (self *DataSource) PushSafe(query interface{}, fieldsDoc interface{}) error {
 	session := self.SessionClone()
