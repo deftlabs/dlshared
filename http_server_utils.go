@@ -83,6 +83,8 @@ func (self *HttpParam) String() string { return self.Value.(string) }
 
 func (self *HttpParam) Bool() bool { return self.Value.(bool) }
 
+func (self *HttpParam) ObjectId() *bson.ObjectId { return self.Value.(*bson.ObjectId) }
+
 // Set a valid value for a param. Missing can be valid, but not present.
 func (self *HttpParam) setPresentValue(value interface{}) {
 	self.Present = true
@@ -118,6 +120,8 @@ func (self *HttpContext) ParamFloat(name string) float64 { return self.Params[na
 func (self *HttpContext) ParamString(name string) string { return self.Params[name].String() }
 
 func (self *HttpContext) ParamBool(name string) bool { return self.Params[name].Bool() }
+
+func (self *HttpContext) ParamObjectId(name string) *bson.ObjectId { return self.Params[name].ObjectId() }
 
 func (self *HttpContext) HasRawErrors() bool { return len(self.Errors) > 0 }
 
@@ -170,9 +174,7 @@ func retrieveJsonParamValue(ctx *HttpContext, param *HttpParam) string {
 
 	valType := reflect.TypeOf(val)
 
-	if valType == nil {
-		return nadaStr
-	}
+	if valType == nil { return nadaStr }
 
 	switch valType.Kind() {
 		case reflect.Invalid: return nadaStr
@@ -268,7 +270,8 @@ func validateObjectIdParam(ctx *HttpContext, param *HttpParam) {
 		return
 	}
 
-	param.setPresentValue(bson.ObjectIdHex(param.Raw))
+	value := bson.ObjectIdHex(param.Raw)
+	param.setPresentValue(&value)
 }
 
 // Boolean types include: 1, t, T, TRUE, true, True, 0, f, F, FALSE, false
