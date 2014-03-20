@@ -47,7 +47,7 @@ type PersistedMetric struct {
 }
 
 // This method returns the change from the current - previous. Usually, only for counters.
-func (self *PersistedMongoMetric) Change() float64 { return self.Value - self.Previous }
+func (self *PersistedMetric) Change() float64 { return self.Value - self.Previous }
 
 func NewMongoMetrics(dbName, collectionName, mongoComponentName string, fireAndForget bool) *MongoMetrics {
 	return &MongoMetrics{ Logger: Logger{}, DataSource: DataSource{ DbName: dbName, CollectionName: collectionName }, mongoComponentName: mongoComponentName, fireAndForget: fireAndForget }
