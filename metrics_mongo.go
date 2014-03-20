@@ -18,6 +18,8 @@ package dlshared
 
 import (
 	"fmt"
+	"time"
+	"labix.org/v2/mgo"
 	"labix.org/v2/mgo/bson"
 )
 
@@ -29,6 +31,23 @@ type MongoMetrics struct {
 	mongoComponentName string
 	fireAndForget bool
 }
+
+type PersistedMetric struct {
+	Id string `bson:"_id" json:"id"`
+
+	Name string `bson:"name" json:"name"`
+	Source string `bson:"source" json:"source"`
+	Type string `bson:"type" json:"type"`
+
+	Value float64 `bson:"value" json:"value"`
+	Previous float64 `bson:"previous" json:"previous"`
+
+	Updated *time.Time `bson:"updated" json:"updated"`
+	Created *time.Time `bson:"created" json:"created"`
+}
+
+// This method returns the change from the current - previous. Usually, only for counters.
+func (self *PersistedMongoMetric) Change() float64 { return self.Value - self.Previous }
 
 func NewMongoMetrics(dbName, collectionName, mongoComponentName string, fireAndForget bool) *MongoMetrics {
 	return &MongoMetrics{ Logger: Logger{}, DataSource: DataSource{ DbName: dbName, CollectionName: collectionName }, mongoComponentName: mongoComponentName, fireAndForget: fireAndForget }
@@ -68,6 +87,12 @@ func (self *MongoMetrics) persistCounter(sourceName string, metric *Metric) {
 
 	if err != nil { self.Logf(Error, "Unable to persist counter - source: %s - metric: %s - error: %v", sourceName, metric.Name, err) }
 }
+
+// Returns all of the distinct metric names
+func (self *MongoMetrics) FindDistinctMetricNames() ([]string, error) { return self.FindDistinctStrs(nil, "name") }
+
+// Returns the cursor for metrics by metric name. The caller must close the cursor when done.
+func (self *MongoMetrics) FindMetricsByName(metricName string, batchSize int) *mgo.Iter { return self.FindManyWithBatchSize(&bson.M{ "name": metricName }, batchSize) }
 
 func (self *MongoMetrics) persistGauge(sourceName string, metric *Metric) {
 
