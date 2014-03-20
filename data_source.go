@@ -30,6 +30,11 @@ type DataSource struct {
 	Logger
 }
 
+func ObjectIdHex(objectIdHex string) *bson.ObjectId {
+	id := bson.ObjectIdHex(objectIdHex)
+	return &id
+}
+
 func (self *DataSource) NewObjectId() *bson.ObjectId {
 	id := bson.NewObjectId()
 	return &id
