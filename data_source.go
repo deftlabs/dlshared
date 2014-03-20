@@ -58,6 +58,20 @@ func (self *DataSource) Upsert(selector interface{}, change interface{}) error {
 	return nil
 }
 
+// Upsert a document into a collection with the passed write concern.
+func (self *DataSource) UpsertSafe(selector interface{}, change interface{}) error {
+	session := self.SessionClone()
+	defer session.Close()
+
+	session.SetSafe(self.Mongo.DefaultSafe)
+
+	if _, err := self.Mongo.Collection(self.DbName, self.CollectionName).Upsert(selector, change); err != nil {
+		return NewStackError("Unable to Upsert - db: %s - collection: %s - error: %v", self.DbName, self.CollectionName, err)
+	}
+
+	return nil
+}
+
 // Insert a document into a collection with the passed write concern.
 func (self *DataSource) InsertSafe(doc interface{}) error {
 	session := self.SessionClone()
