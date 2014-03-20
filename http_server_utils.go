@@ -284,9 +284,7 @@ func validateBoolParam(ctx *HttpContext, param *HttpParam) {
 		return
 	}
 
-	if len(param.Raw) == 0 {
-		return
-	}
+	if len(param.Raw) == 0 { return }
 
 	if val, err := strconv.ParseBool(param.Raw); err != nil {
 		appendInvalidErrorCode(ctx, param)
