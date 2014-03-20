@@ -39,7 +39,7 @@ type Metric struct {
 type Metrics struct {
 	sourceName string
 	quitChannel chan bool
-	relayFunc MetricsRelayFunction
+	relayFuncs []MetricsRelayFunction
 	relayPeriodInSecs int
 	metricChannel chan *Metric
 	ticker *time.Ticker
@@ -47,16 +47,16 @@ type Metrics struct {
 
 // The relay function is only called if there are metrics to relay.
 func NewMetrics(	sourceName string,
-					relayFunc MetricsRelayFunction,
+					relayFuncs []MetricsRelayFunction,
 					relayPeriodInSecs int,
 					metricQueueLength int) *Metrics {
 
 	return &Metrics{
-		sourceName : sourceName,
-		relayFunc : relayFunc,
+		sourceName: sourceName,
+		relayFuncs: relayFuncs,
 		relayPeriodInSecs: relayPeriodInSecs,
-		quitChannel : make(chan bool),
-		metricChannel : make(chan *Metric, metricQueueLength),
+		quitChannel: make(chan bool),
+		metricChannel: make(chan *Metric, metricQueueLength),
 	}
 }
 
@@ -95,30 +95,20 @@ func (self *Metrics) listenForEvents() {
         select {
 			case metric := <- self.metricChannel:
 				current, found := metrics[metric.Name]
-				if !found {
-					metrics[metric.Name] = metric
-					continue
-				}
+				if !found { metrics[metric.Name] = metric; continue }
 
-				if metric.Type == Counter {
-					current.Value = current.Value + metric.Value
-				} else { // This is a gauge
-					current.Value = metric.Value
-				}
+				if metric.Type == Counter { current.Value = current.Value + metric.Value
+				} else {  current.Value = metric.Value }
 
 			case <- self.ticker.C:
 
 				var toRelay []Metric
 
-				for _, v := range metrics {
-					toRelay = append(toRelay, Metric{ Name: v.Name, Type: v.Type, Value: v.Value })
-				}
+				for _, v := range metrics { toRelay = append(toRelay, Metric{ Name: v.Name, Type: v.Type, Value: v.Value }) }
 
-				if len(toRelay) == 0 {
-					continue
-				}
+				if len(toRelay) == 0 { continue }
 
-				go self.relayFunc(self.sourceName, toRelay)
+				for _, relayFunc := range self.relayFuncs { go relayFunc(self.sourceName, toRelay) }
 
 			case <- self.quitChannel:
 				self.ticker.Stop()
@@ -153,20 +143,14 @@ type LogMetrics struct {
 	enabled bool
 }
 
-func (self *LogMetrics) Disable() {
-	self.enabled = false
-}
+func (self *LogMetrics) Disable() { self.enabled = false }
 
-func (self *LogMetrics) Enable() {
-	self.enabled = true
-}
+func (self *LogMetrics) Enable() { self.enabled = true }
 
 // This logs an info message with the following format: [source: %s - type: %s - metric: %s - value: %f]
 func (self *LogMetrics) Log(sourceName string, metrics []Metric) {
 
-	if !self.enabled {
-		return
-	}
+	if !self.enabled { return }
 
 	var typeStr string
 	for i := range metrics {

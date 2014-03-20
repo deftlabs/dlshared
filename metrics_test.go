@@ -29,7 +29,7 @@ func TestMetrics(t *testing.T) {
 		relayFuncCallCount++
 	}
 
-	metrics := NewMetrics("TestSource", relayFunc, 1, 100)
+	metrics := NewMetrics("TestSource", []MetricsRelayFunction { relayFunc }, 1, 100)
 
 	if err := metrics.Start(); err != nil {
 		t.Errorf("TestMetrics Start is broken: %v", err)
