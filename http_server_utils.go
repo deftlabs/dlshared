@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"io/ioutil"
 	"encoding/json"
+	"labix.org/v2/mgo/bson"
 	"github.com/gorilla/mux"
 )
 
@@ -35,6 +36,7 @@ const(
 	HttpStringParam = HttpParamDataType(1)
 	HttpFloatParam = HttpParamDataType(2)
 	HttpBoolParam = HttpParamDataType(3) // Boolean types include: 1, t, T, TRUE, true, True, 0, f, F, FALSE, false
+	HttpObjectIdParam = HttpParamDataType(4)
 
 	// All of the param types only support single values (i.e., no slices). If multiple values are present, the
 	// first is taken.
@@ -102,6 +104,7 @@ func (self *HttpContext) ParamsAreValid() bool {
 			case HttpStringParam: validateStringParam(self, param)
 			case HttpFloatParam: validateFloatParam(self, param)
 			case HttpBoolParam: validateBoolParam(self, param)
+			case HttpObjectIdParam: validateObjectIdParam(self, param)
 		}
 	}
 
@@ -249,6 +252,25 @@ func validateFloatParam(ctx *HttpContext, param *HttpParam) {
 	}
 }
 
+func validateObjectIdParam(ctx *HttpContext, param *HttpParam) {
+
+	param.Raw = retrieveParamValue(ctx, param)
+
+	if len(param.Raw) == 0 && param.Required {
+		appendInvalidErrorCode(ctx, param)
+		return
+	}
+
+	if len(param.Raw) == 0 { return }
+
+	if !bson.IsObjectIdHex(param.Raw) {
+		appendInvalidErrorCode(ctx, param)
+		return
+	}
+
+	param.setPresentValue(bson.ObjectIdHex(param.Raw))
+}
+
 // Boolean types include: 1, t, T, TRUE, true, True, 0, f, F, FALSE, false
 func validateBoolParam(ctx *HttpContext, param *HttpParam) {
 
@@ -281,6 +303,10 @@ func (self *HttpContext) DefineBoolParam(name, invalidErrorCode string, paramTyp
 
 func (self *HttpContext) DefineFloatParam(name, invalidErrorCode string, paramType HttpParamType, required bool) {
 	self.Params[name] = &HttpParam{ Name: name, InvalidErrorCode: invalidErrorCode, DataType: HttpFloatParam, Required: required, Type: paramType, Valid: true }
+}
+
+func (self *HttpContext) DefineObjectIdParam(name, invalidErrorCode string, paramType HttpParamType, required bool) {
+	self.Params[name] = &HttpParam{ Name: name, InvalidErrorCode: invalidErrorCode, DataType: HttpObjectIdParam, Required: required, Type: paramType, Valid: true }
 }
 
 func (self *HttpContext) DefineStringParam(name, invalidErrorCode string, paramType HttpParamType, required bool, minLength, maxLength int) {
