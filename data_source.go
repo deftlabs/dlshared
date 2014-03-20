@@ -136,6 +136,20 @@ func (self *DataSource) PullSafe(query interface{}, fieldsDoc interface{}) error
 	return nil
 }
 
+// Find the distinct string fields. Do not use this on datasets with a large amount of distinct values or
+// you will blow out memory. The selector can be nil.
+func (self *DataSource) FindDistinctStrs(selector interface{}, fieldName string) ([]string, error) {
+	var result []string
+	if err := self.Mongo.Collection(self.DbName, self.CollectionName).Find(selector).Distinct(fieldName, &result); err != nil { return nil, err }
+
+	return result, nil
+}
+
+// The caller must close the cursor when done. Use: defer cursor.Clse()
+func (self *DataSource) FindManyWithBatchSize(selector interface{}, batchSize int) *mgo.Iter {
+	return self.Mongo.Collection(self.DbName, self.CollectionName).Find(selector).Batch(batchSize).Iter()
+}
+
 // Push to an array call using a "safe" operation. If this is a standalone mongo or a mongos, it will use: WMode: "majority".
 // If this is a standalone mongo, it will use: w: 1
 func (self *DataSource) PushSafe(query interface{}, fieldsDoc interface{}) error {
