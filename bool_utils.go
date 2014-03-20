@@ -14,33 +14,38 @@
  * limitations under the License.
  */
 
+/**
+ * Added strings: "yes", "y", "no" and "n". Also case insensitive.
+ */
 package dlshared
 
 import "strings"
 
 const (
 	TrueStrTrue = "true"
+	TrueStrT = "t"
 	TrueStrYes = "yes"
 	TrueStrY = "y"
 	TrueStr1 = "1"
 
 	FalseStrFalse = "false"
-	FalseStrNo = "no"
+	FalseStrF = "f"
 	FalseStrN = "n"
+	FalseStrNo = "no"
 	FalseStr0 = "0"
 )
 
-// Returns true if the string is (case insensitive): (true | yes | y | 1)
+// Returns true if the string is (case insensitive): (true | t | yes | y | 1)
 func StrIsTrue(val string) bool {
 	if len(val) == 0 { return false }
 	s := strings.ToLower(val)
-	return s == TrueStrTrue || s == TrueStrYes || s == TrueStrY || s == TrueStr1
+	return s == TrueStrTrue || s == TrueStrYes || s == TrueStrY || s == TrueStr1 || s == TrueStrT
 }
 
-// Returns false if the string is (case insensitive): (false | no | n | 0)
+// Returns false if the string is (case insensitive): (false | f | no | n | 0)
 func StrIsFalse(val string) bool {
 	if len(val) == 0 { return false }
 	s := strings.ToLower(val)
-	return s == FalseStrFalse || s == FalseStrNo || s == FalseStrN || s == FalseStr0
+	return s == FalseStrFalse || s == FalseStrNo || s == FalseStrN || s == FalseStr0 || s == FalseStrF
 }
 
