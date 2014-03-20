@@ -216,9 +216,7 @@ func validateParamOutput(paramTypeName string, ctx *HttpContext, t *testing.T) {
 
 	if ctx.Params["testObjectId0"].ObjectId().Hex() != "52e29b18eee7d580e9bb1544" { t.Errorf("%s is broken - testObjectId0 is not 52e29b18eee7d580e9bb1544", paramTypeName) }
 
-	if ctx.Params["testObjectId1"].ObjectId() != nil { t.Errorf("%s is broken - testObjectId1 is not nil", paramTypeName) }
-
-	if ctx.Params["testObjectId1"].Valid { t.Errorf("%s is broken - testObjectId1 is valid", paramTypeName) }
+	if ctx.Params["testObjectId1"].Present { t.Errorf("%s is broken - testObjectId1 is present", paramTypeName) }
 
 }
 
