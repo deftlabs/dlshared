@@ -30,20 +30,6 @@ type MongoMetrics struct {
 	fireAndForget bool
 }
 
-/*
-type persistedMongoMetric struct {
-	Id string `bson:"_id"`
-
-	Source string `bson:"source"`
-	Name string `bson:"name"`
-	Type string `bson:"type"`
-	Value float64 `bson:"value"`
-
-	Updated *time.Time `bson:"updated"` // The last update time
-	Created *time.Time `bson:"created"`
-}
-*/
-
 func NewMongoMetrics(dbName, collectionName, mongoComponentName string, fireAndForget bool) *MongoMetrics {
 	return &MongoMetrics{ Logger: Logger{}, DataSource: DataSource{ DbName: dbName, CollectionName: collectionName }, mongoComponentName: mongoComponentName, fireAndForget: fireAndForget }
 }
@@ -64,13 +50,16 @@ func (self *MongoMetrics) persistCounter(sourceName string, metric *Metric) {
 	docId, err := self.assembleDocId(metric.Name, sourceName)
 	if err != nil { return }
 
+	previous, err := self.loadPrevious(docId, metric.Value)
+	if err != nil { return }
+
 	selector := &bson.M{ "_id": docId }
 
 	now := self.Now()
 
 	upsert := &bson.M{
-		"$setOnInsert": &bson.M{ "name": metric.Name, "source": sourceName, "type": CounterStr, "created": now, "updated": now },
-		"$set": &bson.M{ "updated": now },
+		"$setOnInsert": &bson.M{ "name": metric.Name, "source": sourceName, "type": CounterStr, "created": now },
+		"$set": &bson.M{ "updated": now, "previous": previous },
 		"$inc": &bson.M{ "value": metric.Value },
 	}
 
@@ -85,19 +74,46 @@ func (self *MongoMetrics) persistGauge(sourceName string, metric *Metric) {
 	docId, err := self.assembleDocId(metric.Name, sourceName)
 	if err != nil { return }
 
+	previous, err := self.loadPrevious(docId, metric.Value)
+	if err != nil { return }
+
 	selector := &bson.M{ "_id": docId }
 
 	now := self.Now()
 
 	upsert := &bson.M{
-		"$setOnInsert": &bson.M{ "name": metric.Name, "source": sourceName, "type": CounterStr, "created": now, "updated": now },
-		"$set": &bson.M{ "updated": now, "value": metric.Value },
+		"$setOnInsert": &bson.M{ "name": metric.Name, "source": sourceName, "type": CounterStr, "created": now },
+		"$set": &bson.M{ "updated": now, "value": metric.Value, "previous": previous },
 	}
 
 	if self.fireAndForget { err = self.Upsert(selector, upsert)
 	} else { err = self.UpsertSafe(selector, upsert) }
 
 	if err != nil { self.Logf(Error, "Unable to persist counter - source: %s - metric: %s - error: %v", sourceName, metric.Name, err) }
+}
+
+// This returns the previous value or the current metric if not found.
+func (self *MongoMetrics) loadPrevious(docId string, current float64) (float64, error) {
+
+	previous := current
+
+	previousDoc, err := self.FindById(docId)
+	if err != nil {
+		self.Logf(Error, "Unable to find previous - error: %v", err)
+		return previous, err
+	}
+
+	if previousDoc != nil { previous = (*previousDoc)["value"].(float64) }
+
+	return previous, nil
+}
+
+func (self *MongoMetrics) FindById(id string) (*bson.M, error) { return self.findOneBy(&bson.M{ "_id": id }) }
+
+func (self *MongoMetrics) findOneBy(query *bson.M) (*bson.M, error) {
+	doc := &bson.M{}
+	if err := self.FindOne(query, doc); err != nil { return nil, self.RemoveNotFoundErr(err) }
+	return doc, nil
 }
 
 // This method can be used as the Metrics relay function.
