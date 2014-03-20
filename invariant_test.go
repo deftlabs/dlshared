@@ -20,7 +20,64 @@ import (
 	"fmt"
 	"errors"
 	"testing"
+	"labix.org/v2/mgo/bson"
 )
+
+type structPointerTest struct {
+	name string
+}
+
+// Confirm the way structs/pointers works.
+func TestStructs(t *testing.T) {
+
+	id1 := structPointerTest{ name: "test" }
+	id2 := structPointerTest{ name: "test" }
+
+	if id1 != id2 { t.Errorf("TestStructs is broken - no match") }
+
+	p1 := &id1
+	p2 := &id2
+
+	if p1 == p2 { t.Errorf("TestStructs is broken - pointer match") }
+	if *p1 != *p2 { t.Errorf("TestStructs is broken - deferenced pointer - no match") }
+
+	id1 = structPointerTest{ name: "test0" }
+	id2 = structPointerTest{ name: "test1" }
+
+	if id1 == id2 { t.Errorf("TestStructs is broken - match") }
+
+	p1 = &id1
+	p2 = &id2
+
+	if p1 == p2 { t.Errorf("TestStructs is broken - pointer match") }
+	if *p1 == *p2 { t.Errorf("TestStructs is broken - deferenced pointer match") }
+}
+
+func TestObjectId(t *testing.T) {
+
+	id1 := bson.ObjectIdHex("532b19b784a8f7f139f3e338")
+	id2 := bson.ObjectIdHex("532b19b784a8f7f139f3e338")
+
+	if id1 != id2 { t.Errorf("TestObjectId is broken - no match") }
+
+	p1 := &id1
+	p2 := &id2
+
+	if p1 == p2 { t.Errorf("TestObjectId is broken - pointer match") }
+	if *p1 != *p2 { t.Errorf("TestObjectId is broken - deferenced pointer - no match") }
+
+	id1 = bson.ObjectIdHex("532b19b784a8f7f139f3e338")
+	id2 = bson.ObjectIdHex("532b19b884a8f7f139f3e339")
+
+
+	if id1 == id2 { t.Errorf("TestStructs is broken - match") }
+
+	p1 = &id1
+	p2 = &id2
+
+	if p1 == p2 { t.Errorf("TestStructs is broken - pointer match") }
+	if *p1 == *p2 { t.Errorf("TestStructs is broken - deferenced pointer match") }
+}
 
 // Confirm the way errors behave.
 func TestErrors(t *testing.T) {
