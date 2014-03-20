@@ -25,7 +25,7 @@ import (
 
 // A metrics relay function that stores count and guage values in mongo. This
 // does not store historical values, simply current ones.
-type MongoMetrics struct {
+type MetricsMongo struct {
 	Logger
 	DataSource
 	mongoComponentName string
@@ -49,12 +49,12 @@ type PersistedMetric struct {
 // This method returns the change from the current - previous. Usually, only for counters.
 func (self *PersistedMetric) Change() float64 { return self.Value - self.Previous }
 
-func NewMongoMetrics(dbName, collectionName, mongoComponentName string, fireAndForget bool) *MongoMetrics {
-	return &MongoMetrics{ Logger: Logger{}, DataSource: DataSource{ DbName: dbName, CollectionName: collectionName }, mongoComponentName: mongoComponentName, fireAndForget: fireAndForget }
+func NewMetricsMongo(dbName, collectionName, mongoComponentName string, fireAndForget bool) *MetricsMongo {
+	return &MetricsMongo{ Logger: Logger{}, DataSource: DataSource{ DbName: dbName, CollectionName: collectionName }, mongoComponentName: mongoComponentName, fireAndForget: fireAndForget }
 }
 
 // Assemble the doc id. If there is an error, it is logged here.
-func (self *MongoMetrics) assembleDocId(metricName, sourceName string) (string, error) {
+func (self *MetricsMongo) assembleDocId(metricName, sourceName string) (string, error) {
 	id, err := Md5Hex(fmt.Sprintf("%s-%s-metrics", metricName, sourceName))
 	if err != nil {
 		self.Logf(Error, "Unable to assemble doc id - metric: %s - source: %s - error: %v", metricName, sourceName, err)
@@ -64,7 +64,7 @@ func (self *MongoMetrics) assembleDocId(metricName, sourceName string) (string, 
 	return id, nil
 }
 
-func (self *MongoMetrics) persistCounter(sourceName string, metric *Metric) {
+func (self *MetricsMongo) persistCounter(sourceName string, metric *Metric) {
 
 	docId, err := self.assembleDocId(metric.Name, sourceName)
 	if err != nil { return }
@@ -89,12 +89,12 @@ func (self *MongoMetrics) persistCounter(sourceName string, metric *Metric) {
 }
 
 // Returns all of the distinct metric names
-func (self *MongoMetrics) FindDistinctMetricNames() ([]string, error) { return self.FindDistinctStrs(nil, "name") }
+func (self *MetricsMongo) FindDistinctMetricNames() ([]string, error) { return self.FindDistinctStrs(nil, "name") }
 
 // Returns the cursor for metrics by metric name. The caller must close the cursor when done.
-func (self *MongoMetrics) FindMetricsByName(metricName string, batchSize int) *mgo.Iter { return self.FindManyWithBatchSize(&bson.M{ "name": metricName }, batchSize) }
+func (self *MetricsMongo) FindMetricsByName(metricName string, batchSize int) *mgo.Iter { return self.FindManyWithBatchSize(&bson.M{ "name": metricName }, batchSize) }
 
-func (self *MongoMetrics) persistGauge(sourceName string, metric *Metric) {
+func (self *MetricsMongo) persistGauge(sourceName string, metric *Metric) {
 
 	docId, err := self.assembleDocId(metric.Name, sourceName)
 	if err != nil { return }
@@ -118,7 +118,7 @@ func (self *MongoMetrics) persistGauge(sourceName string, metric *Metric) {
 }
 
 // This returns the previous value or the current metric if not found.
-func (self *MongoMetrics) loadPrevious(docId string, current float64) (float64, error) {
+func (self *MetricsMongo) loadPrevious(docId string, current float64) (float64, error) {
 
 	previous := current
 
@@ -133,16 +133,16 @@ func (self *MongoMetrics) loadPrevious(docId string, current float64) (float64, 
 	return previous, nil
 }
 
-func (self *MongoMetrics) FindById(id string) (*bson.M, error) { return self.findOneBy(&bson.M{ "_id": id }) }
+func (self *MetricsMongo) FindById(id string) (*bson.M, error) { return self.findOneBy(&bson.M{ "_id": id }) }
 
-func (self *MongoMetrics) findOneBy(query *bson.M) (*bson.M, error) {
+func (self *MetricsMongo) findOneBy(query *bson.M) (*bson.M, error) {
 	doc := &bson.M{}
 	if err := self.FindOne(query, doc); err != nil { return nil, self.RemoveNotFoundErr(err) }
 	return doc, nil
 }
 
 // This method can be used as the Metrics relay function.
-func (self *MongoMetrics) StoreMetricsInMongo(sourceName string, metrics []Metric) {
+func (self *MetricsMongo) StoreMetricsInMongo(sourceName string, metrics []Metric) {
 
 	for i := range metrics {
 		switch metrics[i].Type {
@@ -152,7 +152,7 @@ func (self *MongoMetrics) StoreMetricsInMongo(sourceName string, metrics []Metri
 	}
 }
 
-func (self *MongoMetrics) Start(kernel *Kernel) error {
+func (self *MetricsMongo) Start(kernel *Kernel) error {
 
 	self.Logger = kernel.Logger
 	self.Mongo = kernel.GetComponent(self.mongoComponentName).(*Mongo)
@@ -170,5 +170,5 @@ func (self *MongoMetrics) Start(kernel *Kernel) error {
 	return nil
 }
 
-func (self *MongoMetrics) Stop(kernel *Kernel) error { return nil }
+func (self *MetricsMongo) Stop(kernel *Kernel) error { return nil }
 
