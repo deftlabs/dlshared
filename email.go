@@ -182,7 +182,7 @@ func NewAwsEmailSvc(dbComponentName,
 					cappedCollectionSizeInBytes int) EmailSvc {
 	return &AwsEmailSvc{
 		Logger: Logger{},
-		DataSource: DataSource{ DbName: dbName, CollectionName: collectionName },
+		MongoDataSource: MongoDataSource{ DbName: dbName, CollectionName: collectionName },
 		dbComponentName: dbComponentName,
 		templateComponentName: templateComponentName,
 		cappedCollectionSizeInBytes: cappedCollectionSizeInBytes,
@@ -192,7 +192,7 @@ func NewAwsEmailSvc(dbComponentName,
 
 type AwsEmailSvc struct {
 	Logger
-	DataSource
+	MongoDataSource
 	dbComponentName string
 	templateComponentName string
 	cappedCollectionSizeInBytes int

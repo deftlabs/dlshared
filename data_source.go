@@ -23,7 +23,7 @@ import (
 	"labix.org/v2/mgo/bson"
 )
 
-type DataSource struct {
+type MongoDataSource struct {
 	DbName string
 	CollectionName string
 	Mongo *Mongo
@@ -35,13 +35,13 @@ func ObjectIdHex(objectIdHex string) *bson.ObjectId {
 	return &id
 }
 
-func (self *DataSource) NewObjectId() *bson.ObjectId {
+func (self *MongoDataSource) NewObjectId() *bson.ObjectId {
 	id := bson.NewObjectId()
 	return &id
 }
 
 // Insert a document into a collection with the base configured write concern.
-func (self *DataSource) Insert(doc interface{}) error {
+func (self *MongoDataSource) Insert(doc interface{}) error {
 	if err := self.Mongo.Collection(self.DbName, self.CollectionName).Insert(doc); err != nil {
 		return NewStackError("Unable to Insert - db: %s - collection: %s - error: %v", self.DbName, self.CollectionName, err)
 	}
@@ -50,7 +50,7 @@ func (self *DataSource) Insert(doc interface{}) error {
 }
 
 // Upsert a document in a collection with the base configured write concern.
-func (self *DataSource) Upsert(selector interface{}, change interface{}) error {
+func (self *MongoDataSource) Upsert(selector interface{}, change interface{}) error {
 	if _, err := self.Mongo.Collection(self.DbName, self.CollectionName).Upsert(selector, change); err != nil {
 		return NewStackError("Unable to Upsert - db: %s - collection: %s - error: %v", self.DbName, self.CollectionName, err)
 	}
@@ -59,7 +59,7 @@ func (self *DataSource) Upsert(selector interface{}, change interface{}) error {
 }
 
 // Upsert a document into a collection with the passed write concern.
-func (self *DataSource) UpsertSafe(selector interface{}, change interface{}) error {
+func (self *MongoDataSource) UpsertSafe(selector interface{}, change interface{}) error {
 	session := self.SessionClone()
 	defer session.Close()
 
@@ -73,7 +73,7 @@ func (self *DataSource) UpsertSafe(selector interface{}, change interface{}) err
 }
 
 // Insert a document into a collection with the passed write concern.
-func (self *DataSource) InsertSafe(doc interface{}) error {
+func (self *MongoDataSource) InsertSafe(doc interface{}) error {
 	session := self.SessionClone()
 
 	defer session.Close()
@@ -87,7 +87,7 @@ func (self *DataSource) InsertSafe(doc interface{}) error {
 }
 
 // Unset a field with the default safe enabled - uses $unset
-func (self *DataSource) UnsetFieldSafe(query interface{}, field string) error {
+func (self *MongoDataSource) UnsetFieldSafe(query interface{}, field string) error {
 	session := self.SessionClone()
 	defer session.Close()
 
@@ -104,7 +104,7 @@ func (self *DataSource) UnsetFieldSafe(query interface{}, field string) error {
 
 // Set fields using a "safe" operation. If this is a standalone mongo or a mongos, it will use: WMode: "majority".
 // If this is a standalone mongo, it will use: w: 1
-func (self *DataSource) SetFieldsSafe(query interface{}, fieldsDoc interface{}) error {
+func (self *MongoDataSource) SetFieldsSafe(query interface{}, fieldsDoc interface{}) error {
 	session := self.SessionClone()
 	defer session.Close()
 
@@ -121,7 +121,7 @@ func (self *DataSource) SetFieldsSafe(query interface{}, fieldsDoc interface{}) 
 
 // Pull from an array call using a "safe" operation. If this is a standalone mongo or a mongos, it will use: WMode: "majority".
 // If this is a standalone mongo, it will use: w: 1
-func (self *DataSource) PullSafe(query interface{}, fieldsDoc interface{}) error {
+func (self *MongoDataSource) PullSafe(query interface{}, fieldsDoc interface{}) error {
 	session := self.SessionClone()
 	defer session.Close()
 
@@ -138,7 +138,7 @@ func (self *DataSource) PullSafe(query interface{}, fieldsDoc interface{}) error
 
 // Find the distinct string fields. Do not use this on datasets with a large amount of distinct values or
 // you will blow out memory. The selector can be nil.
-func (self *DataSource) FindDistinctStrs(selector interface{}, fieldName string) ([]string, error) {
+func (self *MongoDataSource) FindDistinctStrs(selector interface{}, fieldName string) ([]string, error) {
 	var result []string
 	if err := self.Mongo.Collection(self.DbName, self.CollectionName).Find(selector).Distinct(fieldName, &result); err != nil { return nil, err }
 
@@ -146,13 +146,13 @@ func (self *DataSource) FindDistinctStrs(selector interface{}, fieldName string)
 }
 
 // The caller must close the cursor when done. Use: defer cursor.Clse()
-func (self *DataSource) FindManyWithBatchSize(selector interface{}, batchSize int) *mgo.Iter {
+func (self *MongoDataSource) FindManyWithBatchSize(selector interface{}, batchSize int) *mgo.Iter {
 	return self.Mongo.Collection(self.DbName, self.CollectionName).Find(selector).Batch(batchSize).Iter()
 }
 
 // Push to an array call using a "safe" operation. If this is a standalone mongo or a mongos, it will use: WMode: "majority".
 // If this is a standalone mongo, it will use: w: 1
-func (self *DataSource) PushSafe(query interface{}, fieldsDoc interface{}) error {
+func (self *MongoDataSource) PushSafe(query interface{}, fieldsDoc interface{}) error {
 	session := self.SessionClone()
 	defer session.Close()
 
@@ -169,7 +169,7 @@ func (self *DataSource) PushSafe(query interface{}, fieldsDoc interface{}) error
 
 // Set a property using a "safe" operation. If this is a standalone mongo or a mongos, it will use: WMode: "majority".
 // If this is a standalone mongo, it will use: w: 1
-func (self *DataSource) SetFieldSafe(query interface{}, field string, value interface{}) error {
+func (self *MongoDataSource) SetFieldSafe(query interface{}, field string, value interface{}) error {
 	session := self.SessionClone()
 	defer session.Close()
 
@@ -185,12 +185,12 @@ func (self *DataSource) SetFieldSafe(query interface{}, field string, value inte
 }
 
 // Find by the _id. Returns false if not found.
-func (self *DataSource) FindById(id interface{}, result interface{}) error {
+func (self *MongoDataSource) FindById(id interface{}, result interface{}) error {
 	return self.FindOne(&bson.M{ "_id": id }, result)
 }
 
 // Returns nil if this is a NOT a document not found error.
-func (self *DataSource) RemoveNotFoundErr(err error) error {
+func (self *MongoDataSource) RemoveNotFoundErr(err error) error {
 	if self.NotFoundErr(err) {
 		return nil
 	}
@@ -198,17 +198,17 @@ func (self *DataSource) RemoveNotFoundErr(err error) error {
 }
 
 // Returns true if this is a document not found error.
-func (self *DataSource) NotFoundErr(err error) (bool) {
+func (self *MongoDataSource) NotFoundErr(err error) (bool) {
 	return err == mgo.ErrNotFound
 }
 
 // Finds one document or returns false.
-func (self *DataSource) FindOne(query *bson.M, result interface{}) error {
+func (self *MongoDataSource) FindOne(query *bson.M, result interface{}) error {
 	return self.Collection().Find(query).One(result)
 }
 
 // Delete one document from the collection. If the document is not found, no error is returned.
-func (self *DataSource) DeleteOne(selector interface{}) error {
+func (self *MongoDataSource) DeleteOne(selector interface{}) error {
 	if err := self.RemoveNotFoundErr(self.Collection().Remove(selector)); err != nil {
 		return NewStackError("Unable to DeleteOne - db: %s - collection: %s - error: %v", self.DbName, self.CollectionName, err)
 	}
@@ -218,7 +218,7 @@ func (self *DataSource) DeleteOne(selector interface{}) error {
 
 // Delete one or more documents from the collection. If the document(s) is/are not found, no error
 // is returned.
-func (self *DataSource) Delete(selector interface{}) error {
+func (self *MongoDataSource) Delete(selector interface{}) error {
 	if _, err := self.Collection().RemoveAll(selector); err != nil {
 		return NewStackError("Unable to Delete - db: %s - collection: %s - error: %v", self.DbName, self.CollectionName, err)
 	}
@@ -228,7 +228,7 @@ func (self *DataSource) Delete(selector interface{}) error {
 
 // Ensure a unique, non-sparse index is created. This does not create in the background. This does
 // NOT drop duplicates if they exist. Duplicates will cause an error.
-func (self *DataSource) EnsureUniqueIndex(fields []string) error {
+func (self *MongoDataSource) EnsureUniqueIndex(fields []string) error {
 	if err := self.Collection().EnsureIndex(mgo.Index{
 		Key: fields,
 		Unique: true,
@@ -243,7 +243,7 @@ func (self *DataSource) EnsureUniqueIndex(fields []string) error {
 }
 
 // Ensure a non-unique, non-sparse index is created. This does not create in the background.
-func (self *DataSource) EnsureIndex(fields []string) error {
+func (self *MongoDataSource) EnsureIndex(fields []string) error {
 	if err := self.Collection().EnsureIndex(mgo.Index{
 		Key: fields,
 		Unique: false,
@@ -258,7 +258,7 @@ func (self *DataSource) EnsureIndex(fields []string) error {
 }
 
 // Ensure a non-unique, sparse index is created. This does not create in the background.
-func (self *DataSource) EnsureSparseIndex(fields []string) error {
+func (self *MongoDataSource) EnsureSparseIndex(fields []string) error {
 	if err := self.Collection().EnsureIndex(mgo.Index{
 		Key: fields,
 		Unique: false,
@@ -273,7 +273,7 @@ func (self *DataSource) EnsureSparseIndex(fields []string) error {
 }
 
 // Create a capped collection.
-func (self *DataSource) CreateCappedCollection(sizeInBytes int) error {
+func (self *MongoDataSource) CreateCappedCollection(sizeInBytes int) error {
 	if err := self.Collection().Create(&mgo.CollectionInfo{ DisableIdIndex: false, ForceIdIndex: true, Capped: true, MaxBytes: sizeInBytes }); err != nil {
 
 		// This is a bit of a hack, but the error returned does not provide any codes.
@@ -288,7 +288,7 @@ func (self *DataSource) CreateCappedCollection(sizeInBytes int) error {
 }
 
 // Create a ttl index.
-func (self *DataSource) EnsureTtlIndex(field string, expireAfterSeconds int) error {
+func (self *MongoDataSource) EnsureTtlIndex(field string, expireAfterSeconds int) error {
 	if err := self.Collection().EnsureIndex(mgo.Index{
 		Key: []string{ field },
 		Unique: false,
@@ -303,14 +303,14 @@ func (self *DataSource) EnsureTtlIndex(field string, expireAfterSeconds int) err
 	return nil
 }
 
-func (self *DataSource) Now() *time.Time {
+func (self *MongoDataSource) Now() *time.Time {
 	now := time.Now()
 	return &now
 }
 
 // Ensure a unique, sparse index is created. This does not create in the background. This does
 // NOT drop duplicates if they exist. Duplicates will cause an error.
-func (self *DataSource) EnsureUniqueSparseIndex(fields []string) error {
+func (self *MongoDataSource) EnsureUniqueSparseIndex(fields []string) error {
 	if err := self.Collection().EnsureIndex(mgo.Index{
 		Key: fields,
 		Unique: true,
@@ -325,17 +325,17 @@ func (self *DataSource) EnsureUniqueSparseIndex(fields []string) error {
 }
 
 // Returns the collection from the session.
-func (self *DataSource) Collection() *mgo.Collection { return self.Mongo.Collection(self.DbName, self.CollectionName) }
+func (self *MongoDataSource) Collection() *mgo.Collection { return self.Mongo.Collection(self.DbName, self.CollectionName) }
 
 // Returns the database from the session.
-func (self *DataSource) Db() *mgo.Database { return self.Mongo.Db(self.DbName) }
+func (self *MongoDataSource) Db() *mgo.Database { return self.Mongo.Db(self.DbName) }
 
 // Returns the session struct.
-func (self *DataSource) Session() *mgo.Session { return self.Mongo.session }
+func (self *MongoDataSource) Session() *mgo.Session { return self.Mongo.session }
 
 // Returns a clone of the session struct.
-func (self *DataSource) SessionClone() *mgo.Session { return self.Mongo.session.Clone() }
+func (self *MongoDataSource) SessionClone() *mgo.Session { return self.Mongo.session.Clone() }
 
 // Returns a copy of the session struct.
-func (self *DataSource) SessionCopy() *mgo.Session { return self.Mongo.session.Clone() }
+func (self *MongoDataSource) SessionCopy() *mgo.Session { return self.Mongo.session.Clone() }
 

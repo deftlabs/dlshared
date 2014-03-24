@@ -27,7 +27,7 @@ import (
 // does not store historical values, simply current ones.
 type MetricsMongo struct {
 	Logger
-	DataSource
+	MongoDataSource
 	mongoComponentName string
 	fireAndForget bool
 }
@@ -50,7 +50,7 @@ type PersistedMetric struct {
 func (self *PersistedMetric) Change() float64 { return self.Value - self.Previous }
 
 func NewMetricsMongo(dbName, collectionName, mongoComponentName string, fireAndForget bool) *MetricsMongo {
-	return &MetricsMongo{ Logger: Logger{}, DataSource: DataSource{ DbName: dbName, CollectionName: collectionName }, mongoComponentName: mongoComponentName, fireAndForget: fireAndForget }
+	return &MetricsMongo{ Logger: Logger{}, MongoDataSource: MongoDataSource{ DbName: dbName, CollectionName: collectionName }, mongoComponentName: mongoComponentName, fireAndForget: fireAndForget }
 }
 
 // Assemble the doc id. If there is an error, it is logged here.
