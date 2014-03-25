@@ -23,10 +23,10 @@ test: compile
 	@go test
 
 init.libs:
-	@go get github.com/mreiferson/go-httpclient
-	@go get labix.org/v2/mgo
-	@go get github.com/daviddengcn/go-ljson-conf
-	@go get github.com/gorilla/mux
-	@go get code.google.com/p/go.crypto/bcrypt
-
+	@go get -u github.com/mreiferson/go-httpclient
+	@go get -u labix.org/v2/mgo
+	@go get -u github.com/daviddengcn/go-ljson-conf
+	@go get -u github.com/gorilla/mux
+	@go get -u code.google.com/p/go.crypto/bcrypt
+	@go get -u github.com/nranchev/go-libGeoIP
 
