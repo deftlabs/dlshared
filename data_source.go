@@ -247,7 +247,7 @@ func (self *MongoDataSource) EnsureIndex(fields []string) error {
 	if err := self.Collection().EnsureIndex(mgo.Index{
 		Key: fields,
 		Unique: false,
-		DropDups: true,
+		DropDups: false,
 		Background: false,
 		Sparse: false,
 	}); err != nil {
@@ -262,7 +262,7 @@ func (self *MongoDataSource) EnsureSparseIndex(fields []string) error {
 	if err := self.Collection().EnsureIndex(mgo.Index{
 		Key: fields,
 		Unique: false,
-		DropDups: true,
+		DropDups: false,
 		Background: false,
 		Sparse: true,
 	}); err != nil {
