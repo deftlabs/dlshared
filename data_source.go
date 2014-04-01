@@ -232,7 +232,7 @@ func (self *MongoDataSource) EnsureUniqueIndex(fields []string) error {
 	if err := self.Collection().EnsureIndex(mgo.Index{
 		Key: fields,
 		Unique: true,
-		DropDups: true,
+		DropDups: false,
 		Background: false,
 		Sparse: false,
 	}); err != nil {
