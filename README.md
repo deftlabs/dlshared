@@ -5,11 +5,7 @@ Libraries for Go development. I would wait a bit before using this because the l
 
 Installation: `go get github.com/deftlabs/dlshared`
 
-Import:
-
-`import (
-    "github.com/deftlabs/dlshared"
-)`
+Using: `import "github.com/deftlabs/dlshared"`
 
 Docs: [http://godoc.org/github.com/deftlabs/dlshared](http://godoc.org/github.com/deftlabs/dlshared)
 
