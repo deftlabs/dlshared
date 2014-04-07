@@ -221,6 +221,9 @@ func (self *MongoDataSource) FindOne(query *bson.M, result interface{}) error {
 	return self.Collection().Find(query).One(result)
 }
 
+// Delete one document by the _id.
+func (self *MongoDataSource) DeleteById(id interface{}) error { return self.DeleteOne(&bson.M{"_id": id }) }
+
 // Delete one document from the collection. If the document is not found, no error is returned.
 func (self *MongoDataSource) DeleteOne(selector interface{}) error {
 	if err := self.RemoveNotFoundErr(self.Collection().Remove(selector)); err != nil {
