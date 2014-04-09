@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-/**
- * Added strings: "yes", "y", "no" and "n". Also case insensitive.
- */
 package dlshared
 
 import "strings"
