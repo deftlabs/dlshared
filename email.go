@@ -36,16 +36,16 @@ import (
 )
 
 // -----------------------------------------------------------------------------
-// The email ds interface
 
+// The email ds interface
 type EmailDs interface {
 	SendTextEmailToOneAddress(from, to, subject, body string) (interface{}, error)
 	SendHtmlEmailToOneAddress(from, to, subject, bodyHtml, bodyText string) (interface{}, error)
 }
 
 // -----------------------------------------------------------------------------
-// The AWS SES email ds.
 
+// The AWS SES email ds.
 const (
 	AwsSesEndpoint = "https://email.us-east-1.amazonaws.com"
 )
@@ -137,6 +137,7 @@ func (self *AwsEmailDs) postEmailToSes(data url.Values) (interface{}, error) {
 }
 
 // -----------------------------------------------------------------------------
+
 // The email service
 
 type EmailSvc interface {
