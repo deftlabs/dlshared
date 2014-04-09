@@ -68,17 +68,11 @@ func NewConsumer(	name string,
 					maxGoroutines, channelBufferSize, maxWaitOnStopInMs int,
 					logger Logger) *Consumer {
 
-	if channelBufferSize < 0 {
-		channelBufferSize = 0
-	}
+	if channelBufferSize < 0 { channelBufferSize = 0 }
 
-	if maxWaitOnStopInMs < 0 {
-		maxWaitOnStopInMs = 0
-	}
+	if maxWaitOnStopInMs < 0 { maxWaitOnStopInMs = 0 }
 
-	if maxGoroutines <= 0 {
-		maxGoroutines = 1
-	}
+	if maxGoroutines <= 0 { maxGoroutines = 1 }
 
 	consumer := &Consumer{
 		logger: logger,
