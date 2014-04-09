@@ -6,12 +6,12 @@
 //
 // External libraries:
 //
-//     github.com/mreiferson/go-httpclient
-// 	   labix.org/v2/mgo
-//     github.com/daviddengcn/go-ljson-conf
-//     github.com/gorilla/mux
-//     code.google.com/p/go.crypto/bcrypt
-//     github.com/nranchev/go-libGeoIP
+//        github.com/mreiferson/go-httpclient
+//        labix.org/v2/mgo
+//        github.com/daviddengcn/go-ljson-conf
+//        github.com/gorilla/mux
+//        code.google.com/p/go.crypto/bcrypt
+//        github.com/nranchev/go-libGeoIP
 //
 // To initialize the external libraries, run: `make init.libs`
 //
