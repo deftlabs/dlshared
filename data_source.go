@@ -65,7 +65,7 @@ func (self *MongoDataSource) UpsertSafe(selector interface{}, change interface{}
 
 	session.SetSafe(self.Mongo.DefaultSafe)
 
-	if _, err := self.Mongo.Collection(self.DbName, self.CollectionName).Upsert(selector, change); err != nil {
+	if _, err := session.DB(self.DbName).C(self.CollectionName).Upsert(selector, change); err != nil {
 		return NewStackError("Unable to Upsert - db: %s - collection: %s - error: %v", self.DbName, self.CollectionName, err)
 	}
 
@@ -79,7 +79,7 @@ func (self *MongoDataSource) UpdateSafe(selector interface{}, change interface{}
 
 	session.SetSafe(self.Mongo.DefaultSafe)
 
-	if err := self.Mongo.Collection(self.DbName, self.CollectionName).Update(selector, change); err != nil {
+	if err := session.DB(self.DbName).C(self.CollectionName).Update(selector, change); err != nil {
 		return NewStackError("Unable to Update - db: %s - collection: %s - error: %v", self.DbName, self.CollectionName, err)
 	}
 
@@ -205,21 +205,15 @@ func (self *MongoDataSource) FindById(id interface{}, result interface{}) error 
 
 // Returns nil if this is a NOT a document not found error.
 func (self *MongoDataSource) RemoveNotFoundErr(err error) error {
-	if self.NotFoundErr(err) {
-		return nil
-	}
+	if self.NotFoundErr(err) { return nil }
 	return err
 }
 
 // Returns true if this is a document not found error.
-func (self *MongoDataSource) NotFoundErr(err error) (bool) {
-	return err == mgo.ErrNotFound
-}
+func (self *MongoDataSource) NotFoundErr(err error) bool { return err == mgo.ErrNotFound }
 
 // Finds one document or returns false.
-func (self *MongoDataSource) FindOne(query *bson.M, result interface{}) error {
-	return self.Collection().Find(query).One(result)
-}
+func (self *MongoDataSource) FindOne(query *bson.M, result interface{}) error { return self.Collection().Find(query).One(result) }
 
 // Delete one document by the _id.
 func (self *MongoDataSource) DeleteById(id interface{}) error { return self.DeleteOne(&bson.M{"_id": id }) }
