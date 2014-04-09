@@ -14,10 +14,8 @@
  * limitations under the License.
  */
 
-/**
- * This is a thin wrapper around libgeo, which is built on top of MaxMind's geo databases. Currently
- * this only supports IPV4 addresses.
- */
+// This is a thin wrapper around libgeo, which is built on top of MaxMind's geo databases. Currently
+// this only supports IPV4 addresses.
 package dlshared
 
 import "github.com/nranchev/go-libGeoIP"
