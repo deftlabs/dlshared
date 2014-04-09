@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
- package dlshared
+package dlshared
 
 import (
 	"sync"
