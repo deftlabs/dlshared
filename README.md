@@ -9,3 +9,4 @@ Using: `import "github.com/deftlabs/dlshared"`
 
 Docs: [http://godoc.org/github.com/deftlabs/dlshared](http://godoc.org/github.com/deftlabs/dlshared)
 
+[![GoDoc](http://godoc.org/github.com/deftlabs/dlshared?status.png)](http://godoc.org/github.com/deftlabs/dlshared)
