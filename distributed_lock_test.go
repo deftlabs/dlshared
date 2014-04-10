@@ -57,9 +57,11 @@ func TestDistributedLock(t *testing.T) {
 
 	if !lock.HasLock() { t.Errorf("TestDistributedLock is broken - we should have the lock.") }
 
+	fmt.Println("--------- after has lock")
+
 	time.Sleep(1*time.Second)
 
-	fmt.Println("--------- waiting here")
+	fmt.Println("--------- before wait")
 	waitGroup.Wait()
 	fmt.Println("--------- after wait")
 
