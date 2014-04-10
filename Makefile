@@ -33,4 +33,5 @@ init.libs:
 	@go get -u github.com/gorilla/mux
 	@go get -u code.google.com/p/go.crypto/bcrypt
 	@go get -u github.com/nranchev/go-libGeoIP
+	@go get -u github.com/robfig/cron
 

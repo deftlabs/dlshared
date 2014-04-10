@@ -12,6 +12,7 @@
 //        github.com/gorilla/mux
 //        code.google.com/p/go.crypto/bcrypt
 //        github.com/nranchev/go-libGeoIP
+//        github.com/robfig/cron
 //
 // To initialize the external libraries, run: `make init.libs`
 //
