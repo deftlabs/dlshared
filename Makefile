@@ -19,7 +19,10 @@ SHELL := /bin/bash
 compile:
 	@go build
 
-test: compile
+init.test:
+	@mongo --quiet --host 127.0.0.1 --port 28000 test/init_db.js
+
+test: init.test
 	@go test
 
 init.libs:
