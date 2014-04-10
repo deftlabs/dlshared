@@ -45,7 +45,7 @@ func TestMetrics(t *testing.T) {
 
 	execTime := CurrentTimeInMillis() - startTime
 
-	if execTime > 500 {
+	if execTime > 1000 {
 		t.Errorf("TestMetrics is too slow - time in ms: %d", execTime)
 	}
 
