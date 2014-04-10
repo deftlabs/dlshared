@@ -60,9 +60,7 @@ func TestDistributedLock(t *testing.T) {
 	time.Sleep(1*time.Second)
 
 	waitGroup.Wait()
-	fmt.Println("--------- after wait")
 
-	fmt.Println("--------- before unlock")
 	lock.Unlock()
 	fmt.Println("--------- after unlock")
 
