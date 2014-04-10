@@ -357,8 +357,9 @@ func (self *MongoDistributedLock) Stop(kernel *Kernel) error {
 
 	self.stopChannel <- true
 
-	if self.heartbeatTicker != nil { self.heartbeatTicker.Stop() }
-	if self.acquireLockTicker != nil { self.acquireLockTicker.Stop() }
+	self.heartbeatTicker.Stop()
+	self.acquireLockTicker.Stop()
+	self.expireInactiveLockTicker.Stop()
 
 	// Wait for any cleanup
 	self.stopWaitGroup.Wait()
