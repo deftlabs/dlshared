@@ -17,6 +17,7 @@
 package dlshared
 
 import (
+	"fmt"
 	"sync"
 	"time"
 	"testing"
@@ -58,9 +59,13 @@ func TestDistributedLock(t *testing.T) {
 
 	time.Sleep(1*time.Second)
 
+	fmt.Println("--------- waiting here")
 	waitGroup.Wait()
+	fmt.Println("--------- after wait")
 
+	fmt.Println("--------- before unlock")
 	lock.Unlock()
+	fmt.Println("--------- after unlock")
 
 	if err := kernel.Stop(); err != nil { t.Errorf("TestDistributedLock stop kernel is broken:", err) }
 }
