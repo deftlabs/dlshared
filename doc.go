@@ -1,4 +1,4 @@
-// Package dlshared provides a set of reusable tools for Go application development.
+// Package dlshared provides a set of reusable tools/components for Go application development.
 //
 // Details about the dlshared library are found its project page:
 //
