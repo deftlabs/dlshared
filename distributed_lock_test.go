@@ -42,8 +42,8 @@ func TestDistributedLock(t *testing.T) {
 	// Make sure the lock is held
 	lock.Lock()
 
-	waitGroup.Add(1000)
-	for i := 0; i < 1000; i++ {
+	waitGroup.Add(10000)
+	for i := 0; i < 10000; i++ {
 		go func() {
 			if lock.TryLock() { t.Errorf("TestDistributedLock is broken - try lock was able to get the lock") }
 			waitGroup.Done()
