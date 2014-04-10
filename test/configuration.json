@@ -11,6 +11,18 @@
 
 	"environment": "local",
 
-	"pidFile": "/tmp/dlshared_test.pid"
+	"pidFile": "/tmp/dlshared_test.pid",
+
+	"mongoDb": {
+		"testDb": {
+			"mongoUrl": "mongodb://localhost:28000/test",
+			"mode": "strong",
+			"type": "standalone",
+			"dialTimeoutInMs": 30000,
+			"socketTimeoutInMs": 30000,
+			"syncTimeoutInMs": 30000,
+			"cursorTimeoutInMs": 30000
+		}
+	}
 
 }
