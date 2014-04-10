@@ -427,8 +427,6 @@ func (self *mongoDistributedLockDs) expireInactiveLock() (bool, error) {
 
 	tsCheck := bson.NewObjectIdWithTime(time.Now().Add(time.Duration(-1 * self.lockTimeoutInSec) * time.Second))
 
-	fmt.Println(tsCheck.Hex())
-
 	query := &bson.M{ "_id": self.lockId, "state": DistributedLockLocked, "ts": &bson.M{ "$lte": tsCheck }}
 	toSet := bson.M{ "$set": bson.M{ "process": nil, "state": DistributedLockUnlocked, "ts": nil, "when": nil, "who": nil } }
 

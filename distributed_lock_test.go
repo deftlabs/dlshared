@@ -17,7 +17,6 @@
 package dlshared
 
 import (
-	"fmt"
 	"sync"
 	"time"
 	"testing"
@@ -40,9 +39,7 @@ func TestDistributedLock(t *testing.T) {
 	waitGroup := new(sync.WaitGroup)
 
 	// Make sure the lock is held
-	fmt.Println("------------ before initial lock")
 	lock.Lock()
-	fmt.Println("------------ after initial lock")
 
 	waitGroup.Add(1000)
 	for i := 0; i < 1000; i++ {
