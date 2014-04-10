@@ -42,6 +42,8 @@ func TestDistributedLock(t *testing.T) {
 	// Make sure the lock is held
 	lock.Lock()
 
+	fmt.Println("--------- after first lock")
+
 	waitGroup.Add(1000)
 	for i := 0; i < 1000; i++ {
 		go func() {
@@ -54,6 +56,8 @@ func TestDistributedLock(t *testing.T) {
 		lock.Lock()
 		t.Errorf("TestDistributedLock is broken - we should not be able to obtain the lock.")
 	}()
+
+	fmt.Println("--------- before has lock")
 
 	if !lock.HasLock() { t.Errorf("TestDistributedLock is broken - we should have the lock.") }
 
