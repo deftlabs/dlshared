@@ -55,8 +55,6 @@ func TestDistributedLock(t *testing.T) {
 		t.Errorf("TestDistributedLock is broken - we should not be able to obtain the lock.")
 	}()
 
-	fmt.Println("--------- before has lock")
-
 	if !lock.HasLock() { t.Errorf("TestDistributedLock is broken - we should have the lock.") }
 
 	fmt.Println("--------- after has lock")
