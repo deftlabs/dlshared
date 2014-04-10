@@ -17,6 +17,6 @@
 // To initialize the external libraries, run: `make init.libs`
 //
 //
-// For more information, see the documentation below.
+// For more information, see the documentation below...
 //
 package dlshared
