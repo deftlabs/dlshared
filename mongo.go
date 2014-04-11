@@ -32,17 +32,18 @@ const (
 
 // Create a new Mongo component from a configuration path. The path passed must be in the following format.
 //
-// mongodb: {
-//     configDb: {
-//         mongoUrl: "mongodb://localhost:27017/test",
-//         mode: "strong",
-//         dialTimeoutInMs: 3000,
-//         socketTimeoutInMs: 3000,
-//         syncTimeoutInMs: 3000,
-//         cursorTimeoutInMs: 30000,
-//         type: "standalone",
-//     }
-// }
+//    mongodb: {
+//        configDb: {
+//            mongoUrl: "mongodb://localhost:27017/test",
+//            mode: "strong",
+//            dialTimeoutInMs: 3000,
+//            socketTimeoutInMs: 3000,
+//            syncTimeoutInMs: 3000,
+//            cursorTimeoutInMs: 30000,
+//            type: "standalone",
+//        }
+//    }
+//
 //
 // The configPath for this component would be "mongodb.configDb". The path can be any arbitrary set of nested
 // json documents (json path). If the path is incorrect, the Start() method will panic when called by the kernel.
