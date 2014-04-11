@@ -122,18 +122,14 @@ func callStartStopMethod(methodTypeName, methodName string, singleton interface{
 	}
 
 	methodInputs := make([]reflect.Value, 0)
-	if methodType.NumIn() == 1 {
-		methodInputs = append(methodInputs, reflect.ValueOf(kernel))
-	}
+	if methodType.NumIn() == 1 { methodInputs = append(methodInputs, reflect.ValueOf(kernel)) }
 
 	returnValues := methodValue.Call(methodInputs)
 
 	// Check to see if there was an error
 	if len(returnValues) == 1 {
 		err := returnValues[0].Interface()
-		if err != nil {
-			return err.(error)
-		}
+		if err != nil { return err.(error) }
 	}
 
 	return nil
