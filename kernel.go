@@ -113,7 +113,7 @@ func callStartStopMethod(methodTypeName, methodName string, singleton interface{
 	}
 
 	if methodType.NumIn() > 1 {
-		return fmt.Errorf("The %s method: %s on struct: %s has more than one parameter - you can only accept Kernel or nothing", methodTypeName, methodName, value.Type())
+		return fmt.Errorf("The %s method: %s on struct: %s has more than one parameter - you can only pass the Kernel or nothing", methodTypeName, methodName, value.Type())
 	}
 
 	// Verify the return type is error
