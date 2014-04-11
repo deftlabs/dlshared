@@ -117,8 +117,7 @@ func callStartStopMethod(methodTypeName, methodName string, singleton interface{
 	}
 
 	// Verify the return type is error
-	if methodType.NumOut() == 1 && methodType.Out(0).Name() != "error"  {
-
+	if methodType.NumOut() == 1 && methodType.Out(0).Name() != "error" {
 		return fmt.Errorf("The %s method: %s on struct: %s has an invalid return type - you can return nothing or error", methodTypeName, methodName, value.Type())
 	}
 
