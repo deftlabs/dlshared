@@ -32,15 +32,15 @@ const (
 
 // Create a new Mongo component from a configuration path. The path passed must be in the following format.
 //
-//    mongodb: {
-//        configDb: {
-//            mongoUrl: "mongodb://localhost:27017/test",
-//            mode: "strong",
-//            dialTimeoutInMs: 3000,
-//            socketTimeoutInMs: 3000,
-//            syncTimeoutInMs: 3000,
-//            cursorTimeoutInMs: 30000,
-//            type: "standalone",
+//    "mongodb": {
+//        "configDb": {
+//            "mongoUrl": "mongodb://localhost:27017/test",
+//            "mode": "strong",
+//            "dialTimeoutInMs": 3000,
+//            "socketTimeoutInMs": 3000,
+//            "syncTimeoutInMs": 3000,
+//            "cursorTimeoutInMs": 30000,
+//            "type": "standalone",
 //        }
 //    }
 //
@@ -154,47 +154,32 @@ func (self *Mongo) Start(kernel *Kernel) error {
 
 	// This is a configuration based creation. Load the config data first.
 	if len(self.configPath) > 0 {
-		self.mongoUrl = self.kernel.Configuration.String(fmt.Sprintf("%s.%s", self.configPath, "mongoUrl"), "")
-		self.connectionType = MongoConnectionType(self.kernel.Configuration.String(fmt.Sprintf("%s.%s", self.configPath, "type"), ""))
-		self.mode = self.kernel.Configuration.String(fmt.Sprintf("%s.%s", self.configPath, "mode"), "")
-		self.dialTimeoutInMs = self.kernel.Configuration.Int(fmt.Sprintf("%s.%s", self.configPath, "dialTimeoutInMs"), -1)
-		self.socketTimeoutInMs = self.kernel.Configuration.Int(fmt.Sprintf("%s.%s", self.configPath, "socketTimeoutInMs"), -1)
-		self.syncTimeoutInMs = self.kernel.Configuration.Int(fmt.Sprintf("%s.%s", self.configPath, "syncTimeoutInMs"), -1)
-		self.cursorTimeoutInMs = self.kernel.Configuration.Int(fmt.Sprintf("%s.%s", self.configPath, "cursorTimeoutInMs"), -1)
+		self.mongoUrl = self.kernel.Configuration.StringWithPath(self.configPath, "mongoUrl", "")
+
+		self.connectionType = MongoConnectionType(self.kernel.Configuration.StringWithPath(self.configPath, "type", ""))
+		self.mode = self.kernel.Configuration.StringWithPath(self.configPath, "mode", "")
+		self.dialTimeoutInMs = self.kernel.Configuration.IntWithPath(self.configPath, "dialTimeoutInMs", -1)
+		self.socketTimeoutInMs = self.kernel.Configuration.IntWithPath(self.configPath, "socketTimeoutInMs", -1)
+		self.syncTimeoutInMs = self.kernel.Configuration.IntWithPath(self.configPath, "syncTimeoutInMs", -1)
+		self.cursorTimeoutInMs = self.kernel.Configuration.IntWithPath(self.configPath, "cursorTimeoutInMs", -1)
 	}
 
 	// Validate the params
-	if len(self.mongoUrl) == 0 {
-		panic(fmt.Sprintf("In Mongo - mongoUrl is not set - componentId: %s", self.componentId))
-	}
+	if len(self.mongoUrl) == 0 { panic(fmt.Sprintf("In Mongo - mongoUrl is not set - componentId: %s", self.componentId)) }
 
-	if len(self.connectionType) == 0 {
-		panic(fmt.Sprintf("In Mongo - type is not set - componentId: %s", self.componentId))
-	}
+	if len(self.connectionType) == 0 { panic(fmt.Sprintf("In Mongo - type is not set - componentId: %s", self.componentId)) }
 
-	if self.dialTimeoutInMs < 0 {
-		panic(fmt.Sprintf("In Mongo - dialTimeoutInMs is invalid - value: %d - componentId: %s", self.dialTimeoutInMs, self.componentId))
-	}
+	if self.dialTimeoutInMs < 0 { panic(fmt.Sprintf("In Mongo - dialTimeoutInMs is invalid - value: %d - componentId: %s", self.dialTimeoutInMs, self.componentId)) }
 
-	if self.socketTimeoutInMs < 0 {
-		panic(fmt.Sprintf("In Mongo - socketTimeoutInMs is invalid - value: %d - componentId: %s", self.socketTimeoutInMs, self.componentId))
-	}
+	if self.socketTimeoutInMs < 0 { panic(fmt.Sprintf("In Mongo - socketTimeoutInMs is invalid - value: %d - componentId: %s", self.socketTimeoutInMs, self.componentId)) }
 
-	if self.syncTimeoutInMs < 0 {
-		panic(fmt.Sprintf("In Mongo - syncTimeoutInMs is invalid - value: %d - componentId: %s", self.syncTimeoutInMs, self.componentId))
-	}
+	if self.syncTimeoutInMs < 0 { panic(fmt.Sprintf("In Mongo - syncTimeoutInMs is invalid - value: %d - componentId: %s", self.syncTimeoutInMs, self.componentId)) }
 
-	if self.cursorTimeoutInMs < 0 {
-		panic(fmt.Sprintf("In Mongo - cursorTimeoutInMs is invalid - value: %d - componentId: %s", self.cursorTimeoutInMs, self.componentId))
-	}
+	if self.cursorTimeoutInMs < 0 { panic(fmt.Sprintf("In Mongo - cursorTimeoutInMs is invalid - value: %d - componentId: %s", self.cursorTimeoutInMs, self.componentId)) }
 
-	if len(self.mode) == 0 {
-		panic(fmt.Sprintf("In Mongo - mode is invalid - value: %s - componentId: %s", self.mode, self.componentId))
-	}
+	if len(self.mode) == 0 { panic(fmt.Sprintf("In Mongo - mode is invalid - value: %s - componentId: %s", self.mode, self.componentId)) }
 
-	if self.mode != "strong" && self.mode != "eventual" && self.mode != "montonic" {
-		panic(fmt.Sprintf("In Mongo - mode is invalid - value: %s - componentId: %s", self.mode, self.componentId))
-	}
+	if self.mode != "strong" && self.mode != "eventual" && self.mode != "montonic" { panic(fmt.Sprintf("In Mongo - mode is invalid - value: %s - componentId: %s", self.mode, self.componentId)) }
 
 	// Create the session.
 	if self.session, err = mgo.DialWithTimeout(self.mongoUrl, time.Duration(self.dialTimeoutInMs) * time.Millisecond); err != nil {
