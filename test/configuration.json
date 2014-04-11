@@ -23,6 +23,25 @@
 			"syncTimeoutInMs": 30000,
 			"cursorTimeoutInMs": 30000
 		}
-	}
+	},
 
+	"cron": {
+		"scheduled": {
+			"mongoComponentId": "MongoTestDb",
+
+			"definitionDbName": "test",
+			"definitionCollectionName": "cron.definitions",
+
+			"auditDbName": "test",
+			"auditCollectionName": "cron.audit",
+			"auditTimeoutInSec": 126144000,
+
+			"distributedLockComponentId": "DistributedLock",
+
+			"scheduledFunctions": [
+				{ "jobId": "testCronJob-Run", "componentId": "testComponentId", "functionName": "Run", "schedule": "0 30 * * * *", "requiresDistributedLock": true, "audit": true },
+				{ "jobId": "testCronJob-Test", "componentId": "testComponentId", "functionName": "Test", "schedule": "0 30 * * * *", "requiresDistributedLock": true, "audit": true }
+			]
+		}
+	}
 }
