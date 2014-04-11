@@ -58,6 +58,12 @@ func (self *Configuration) IntList(key string, def []int) []int { return self.da
 
 func (self *Configuration) List(key string, def []interface{}) []interface{} { return self.data.List(key, def) }
 
+func (self *Configuration) ListWithPath(path, key string, def []interface{}) []interface{} { return self.List(fmt.Sprintf(confPathKeyPattern, path, key), def) }
+
+func (self *Configuration) Interface(key string, def interface{}) interface{} { return self.data.Interface(key, def) }
+
+func (self *Configuration) InterfaceWithPath(path, key string, def interface{}) interface{} { return self.Interface(fmt.Sprintf(confPathKeyPattern, path, key), def) }
+
 func (self *Configuration) EnvironmentIs(expected string) bool { return self.Environment == expected }
 
 func NewConfiguration(fileName string) (*Configuration, error) {
