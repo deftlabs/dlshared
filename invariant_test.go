@@ -20,11 +20,17 @@ import (
 	"fmt"
 	"errors"
 	"testing"
+	"labix.org/v2/mgo"
 	"labix.org/v2/mgo/bson"
 )
 
 type structPointerTest struct {
 	name string
+}
+
+func TestNilErr(t *testing.T) {
+	if nil == mgo.ErrNotFound { t.Errorf("TestNilErr is broken - mgo not found matches nil") }
+	if mgo.IsDup(nil) { t.Errorf("TestNilErr is broken - is dup matches nil") }
 }
 
 // Confirm the way structs/pointers works.
