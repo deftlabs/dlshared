@@ -47,21 +47,52 @@ func GetFunctionName(i interface{}) string {
 	startFunc := strings.Index(val, "(")
 	endFunc := strings.Index(val, ")")
 
-	if startFunc == -1 { return removeFilePathIfPresent(val) }
+	if startFunc == -1 { return reflectRemoveFilePathIfPresent(val) }
 
-	funcStr := removeFilePathIfPresent(val[startFunc+1:endFunc])
+	funcStr := reflectRemoveFilePathIfPresent(val[startFunc+1:endFunc])
 
 	if i := strings.LastIndex(funcStr, "."); i > -1 { funcStr = funcStr[i+1:len(funcStr)] }
 
-	structStr := removeFilePathIfPresent(val[0:startFunc-1])
+	structStr := reflectRemoveFilePathIfPresent(val[0:startFunc-1])
 
 	return strings.Replace(fmt.Sprintf("%s.%s", structStr, funcStr), "*", "", -1)
 }
 
+func GetMethodValueByName(val interface{}, methodName string, allowedArgs, allowedReturn int) (error, reflect.Value) {
 
-func removeFilePathIfPresent(val string) string {
+	value := reflect.ValueOf(val)
+
+	methodValue := value.MethodByName(methodName)
+
+	if !methodValue.IsValid() { return NewStackError("Method: %s is NOT found on struct: %s", methodName, value.Type()), reflect.Value{} }
+
+	methodType := methodValue.Type()
+
+	if methodType.NumOut() != allowedReturn {
+		return NewStackError(	"The method: %s on struct: %s has: %d return value(s) - you must  pass: %d",
+								methodName,
+								value.Type(),
+								methodType.NumOut(),
+								allowedReturn),
+								reflect.Value{}
+	}
+
+	if methodType.NumIn() !=  allowedArgs {
+		return NewStackError(	"The method: %s on struct: %s has: %d parameter(s) - you must pass: %d",
+								methodName,
+								value.Type(),
+								methodType.NumIn(),
+								allowedArgs),
+								reflect.Value{}
+	}
+
+	return nil, methodValue
+}
+
+func CallNoParamNoReturnValueMethod(val interface{}, methodValue reflect.Value) { methodValue.Call(make([]reflect.Value, 0)) }
+
+func reflectRemoveFilePathIfPresent(val string) string {
 	if i := strings.LastIndex(val, "/"); i > -1 { val = val[i+1:len(val)] }
-
 	return val
 }
 

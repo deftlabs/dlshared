@@ -18,8 +18,51 @@ package dlshared
 
 import "testing"
 
-func TestGetFunctionName(t *testing.T) {
+type reflectionTestStruct struct { }
+func (self *reflectionTestStruct) Hello() { }
+func (self *reflectionTestStruct) Method0(value string) { }
+func (self *reflectionTestStruct) Method1() error { return nil }
+func (self *reflectionTestStruct) Method2(value1, value2 string) { }
+func (self *reflectionTestStruct) Method3() (error, error) { return nil, nil }
 
+func TestCallNoParamNoReturnValueMethod(t *testing.T) {
+
+	val := &reflectionTestStruct{}
+
+	err, methodValue := GetMethodValueByName(val, "Hello", 0, 0)
+	if err != nil { t.Errorf("TestCallNoParamNoReturnValueMethod failed with %v", err) }
+
+	CallNoParamNoReturnValueMethod(val, methodValue)
+
+}
+
+func TestGetMethodValueByName(t *testing.T) {
+
+	if err, _ := GetMethodValueByName(&reflectionTestStruct{}, "Hello", 0, 0); err != nil { t.Errorf("TestGetMethodValueByName failed Hello 0 0 - with %v", err) }
+	if err, _ := GetMethodValueByName(&reflectionTestStruct{}, "Hello", 1, 1); err == nil { t.Errorf("TestGetMethodValueByName failed Hello 1 1") }
+
+	if err, _ := GetMethodValueByName(&reflectionTestStruct{}, "Method0", 1, 0); err != nil { t.Errorf("TestGetMethodValueByName failed Method0 1 0 - with %v", err) }
+	if err, _ := GetMethodValueByName(&reflectionTestStruct{}, "Method0", 0, 1); err == nil { t.Errorf("TestGetMethodValueByName failed Method0 0 1 - with %v", err) }
+	if err, _ := GetMethodValueByName(&reflectionTestStruct{}, "Method0", 1, 1); err == nil { t.Errorf("TestGetMethodValueByName failed Method0 1 1 - with %v", err) }
+	if err, _ := GetMethodValueByName(&reflectionTestStruct{}, "Method0", 0, 0); err == nil { t.Errorf("TestGetMethodValueByName failed Method0 0 0 - with %v", err) }
+
+	if err, _ := GetMethodValueByName(&reflectionTestStruct{}, "Method1", 0, 1); err != nil { t.Errorf("TestGetMethodValueByName failed Method1 0 1 - with %v", err) }
+	if err, _ := GetMethodValueByName(&reflectionTestStruct{}, "Method1", 1, 0); err == nil { t.Errorf("TestGetMethodValueByName failed Method1 1 0 - with %v", err) }
+	if err, _ := GetMethodValueByName(&reflectionTestStruct{}, "Method1", 0, 0); err == nil { t.Errorf("TestGetMethodValueByName failed Method1 0 0 - with %v", err) }
+	if err, _ := GetMethodValueByName(&reflectionTestStruct{}, "Method1", 1, 0); err == nil { t.Errorf("TestGetMethodValueByName failed Method1 1 0 - with %v", err) }
+
+	if err, _ := GetMethodValueByName(&reflectionTestStruct{}, "Method2", 2, 0); err != nil { t.Errorf("TestGetMethodValueByName failed Method2 2 0 - with %v", err) }
+	if err, _ := GetMethodValueByName(&reflectionTestStruct{}, "Method2", 2, 1); err == nil { t.Errorf("TestGetMethodValueByName failed Method2 2 1 - with %v", err) }
+	if err, _ := GetMethodValueByName(&reflectionTestStruct{}, "Method2", 0, 0); err == nil { t.Errorf("TestGetMethodValueByName failed Method2 0 0 - with %v", err) }
+	if err, _ := GetMethodValueByName(&reflectionTestStruct{}, "Method2", 0, 1); err == nil { t.Errorf("TestGetMethodValueByName failed Method2 0 1 - with %v", err) }
+
+	if err, _ := GetMethodValueByName(&reflectionTestStruct{}, "Method3", 0, 2); err != nil { t.Errorf("TestGetMethodValueByName failed Method3 0 2 - with %v", err) }
+	if err, _ := GetMethodValueByName(&reflectionTestStruct{}, "Method3", 1, 0); err == nil { t.Errorf("TestGetMethodValueByName failed Method3 1 0 - with %v", err) }
+	if err, _ := GetMethodValueByName(&reflectionTestStruct{}, "Method3", 2, 0); err == nil { t.Errorf("TestGetMethodValueByName failed Method3 2 0 - with %v", err) }
+	if err, _ := GetMethodValueByName(&reflectionTestStruct{}, "Method3", 0, 0); err == nil { t.Errorf("TestGetMethodValueByName failed Method3 0 0 - with %v", err) }
+}
+
+func TestGetFunctionName(t *testing.T) {
 
 	if GetFunctionName(testFunction1) != "testFunction1" {
 		t.Errorf("TestGetFunctionName failed - expected: testFunction1 - received: %s", GetFunctionName(testFunction1))
