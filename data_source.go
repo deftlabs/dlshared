@@ -210,16 +210,10 @@ func (self *MongoDataSource) RemoveNotFoundErr(err error) error {
 }
 
 // Returns true if this is a dup error. If nil is passed, false is returned.
-func (self *MongoDataSource) IsDupErr(err error) bool {
-	if err == nil { return false }
-	return mgo.IsDup(err)
-}
+func (self *MongoDataSource) IsDupErr(err error) bool { return mgo.IsDup(err) }
 
 // Returns true if this is a document not found error. If nil is passed, false is returned.
-func (self *MongoDataSource) NotFoundErr(err error) bool {
-	if err == nil { return false }
-	return err == mgo.ErrNotFound
-}
+func (self *MongoDataSource) NotFoundErr(err error) bool { return err == mgo.ErrNotFound }
 
 // Finds one document or returns false.
 func (self *MongoDataSource) FindOne(query *bson.M, result interface{}) error { return self.Collection().Find(query).One(result) }
