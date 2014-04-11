@@ -296,7 +296,7 @@ func (self *MongoDistributedLock) listenForEvents() {
 				}
 			}
 
-			case <- self.stopChannel: { if haveDistributedLock { self.releaseLock() }; return }
+			case <- self.stopChannel: { return }
         }
     }
 }
@@ -308,12 +308,10 @@ func (self *MongoDistributedLock) releaseLock() {
 
 	if err != nil {
 		self.Logf(Error, "Unable to release lock: %s - hostId: %s - err: %s - err-code: %s", self.LockId, self.hostId, err, DistributedLockErrTimeoutWillOccur)
-	} else if !found {
-		self.Logf(Error, "Failed releasing a known lock - lock doc was not found - lock: %s - host id: %s - err-code: %s", self.LockId, self.hostId, DistributedLockErrNoLockDoc)
 	}
 
-	if self.ds.historyTimeoutInSec > 0 {
-		if err := self.historyDs.lockReleased(found, err); err != nil {
+	if self.ds.historyTimeoutInSec > 0 && err != nil && found {
+		if err := self.historyDs.lockReleased(); err != nil {
 			self.Logf(Error, "Unable to log history for release - lock: %s - host id: %s - err: %v", self.LockId, self.hostId, err)
 		}
 	}
@@ -360,6 +358,9 @@ func (self *MongoDistributedLock) Stop(kernel *Kernel) error {
 	self.heartbeatTicker.Stop()
 	self.acquireLockTicker.Stop()
 	self.expireInactiveLockTicker.Stop()
+
+	self.releaseLock() // Only if held by the current process
+	self.localLock.L.Unlock()
 
 	// Wait for any cleanup
 	self.stopWaitGroup.Wait()
@@ -496,20 +497,14 @@ func (self *mongoDistributedLockHistoryDs) lockAcquired(doc *bson.M) error {
 }
 
 // Store the lock released info/state.
-func (self *mongoDistributedLockHistoryDs) lockReleased(found bool, err error) error {
-	doc := bson.M{
+func (self *mongoDistributedLockHistoryDs) lockReleased() error {
+	return self.Insert(&bson.M{
 		"_id": self.NewObjectId(),
 		"lockId": self.lockId,
 		"process": self.hostId,
 		"state": DistributedLockUnlocked,
 		"when": self.Now(),
 		"who": self.hostId,
-	}
-
-	if !found { doc["error"] = "LOCK_RELEASE_IN_STATE_NOT_FOUND"
-	} else if err != nil { doc["error"] = err.Error()
-	} else { doc["error"] = "NONE" }
-
-	return self.Insert(doc)
+	})
 }
 
