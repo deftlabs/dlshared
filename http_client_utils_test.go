@@ -127,29 +127,17 @@ func TestWriteOkResponseString(t *testing.T) {
 
 func TestIsHttpMethodPost(t *testing.T) {
 
-	if IsHttpMethodPost(&http.Request{ Method : "" }) {
-		t.Errorf("IsHttpMethodPost is broken")
-	}
+	if IsHttpMethodPost(&http.Request{ Method : "" }) { t.Errorf("IsHttpMethodPost is broken") }
 
-	if IsHttpMethodPost(&http.Request{ Method : "wrong" }) {
-		t.Errorf("IsHttpMethodPost is broken")
-	}
+	if IsHttpMethodPost(&http.Request{ Method : "wrong" }) { t.Errorf("IsHttpMethodPost is broken") }
 
-	if !IsHttpMethodPost(&http.Request{ Method : "post" }) {
-		t.Errorf("IsHttpMethodPost is broken")
-	}
+	if !IsHttpMethodPost(&http.Request{ Method : "post" }) { t.Errorf("IsHttpMethodPost is broken") }
 
-	if !IsHttpMethodPost(&http.Request{ Method : "Post" }) {
-		t.Errorf("IsHttpMethodPost is broken")
-	}
+	if !IsHttpMethodPost(&http.Request{ Method : "Post" }) { t.Errorf("IsHttpMethodPost is broken") }
 
-	if !IsHttpMethodPost(&http.Request{ Method : "POST" }) {
-		t.Errorf("IsHttpMethodPost is broken")
-	}
+	if !IsHttpMethodPost(&http.Request{ Method : "POST" }) { t.Errorf("IsHttpMethodPost is broken") }
 
-	if !IsHttpMethodPost(&http.Request{ Method : "PosT" }) {
-		t.Errorf("IsHttpMethodPost is broken")
-	}
+	if !IsHttpMethodPost(&http.Request{ Method : "PosT" }) { t.Errorf("IsHttpMethodPost is broken") }
 
 	// Verify the panic
 	defer func() {
