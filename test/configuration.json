@@ -39,8 +39,8 @@
 			"distributedLockComponentId": "DistributedLock",
 
 			"scheduledFunctions": [
-				{ "jobId": "testCronJob-Run", "componentId": "testComponentId", "functionName": "Run", "schedule": "0 30 * * * *", "requiresDistributedLock": true, "audit": true },
-				{ "jobId": "testCronJob-Test", "componentId": "testComponentId", "functionName": "Test", "schedule": "0 30 * * * *", "requiresDistributedLock": true, "audit": true }
+				{ "jobId": "testCronJob-Run", "componentId": "testComponentId", "methodName": "Run", "schedule": "0 30 * * * *", "requiresDistributedLock": true, "audit": true },
+				{ "jobId": "testCronJob-Test", "componentId": "testComponentId", "methodName": "Test", "schedule": "0 30 * * * *", "requiresDistributedLock": true, "audit": true }
 			]
 		}
 	}
