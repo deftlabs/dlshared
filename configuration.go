@@ -18,6 +18,7 @@ package dlshared
 
 import (
 	"os"
+	"fmt"
 	"github.com/daviddengcn/go-ljson-conf"
 )
 
@@ -33,17 +34,29 @@ type Configuration struct {
 	data *ljconf.Conf
 }
 
+const confPathKeyPattern = "%s.%s"
+
 func (self *Configuration) String(key string, def string) string { return self.data.String(key, def) }
+
+func (self *Configuration) StringWithPath(path, key string, def string) string { return self.String(fmt.Sprintf(confPathKeyPattern, path, key), def) }
 
 func (self *Configuration) Int(key string, def int) int { return self.data.Int(key, def) }
 
+func (self *Configuration) IntWithPath(path, key string, def int) int { return self.Int(fmt.Sprintf(confPathKeyPattern, path, key), def) }
+
 func (self *Configuration) Bool(key string, def bool) bool { return self.data.Bool(key, def) }
 
+func (self *Configuration) BoolWithPath(path, key string, def bool) bool { return self.Bool(fmt.Sprintf(confPathKeyPattern, path, key), def) }
+
 func (self *Configuration) Float(key string, def float64) float64 { return self.data.Float(key, def) }
+
+func (self *Configuration) FloatWithPath(path, key string, def float64) float64 { return self.Float(fmt.Sprintf(confPathKeyPattern, path, key), def) }
 
 func (self *Configuration) StrList(key string, def [] string) []string { return self.data.StringList(key, def) }
 
 func (self *Configuration) IntList(key string, def []int) []int { return self.data.IntList(key, def) }
+
+func (self *Configuration) List(key string, def []interface{}) []interface{} { return self.data.List(key, def) }
 
 func (self *Configuration) EnvironmentIs(expected string) bool { return self.Environment == expected }
 
@@ -52,15 +65,11 @@ func NewConfiguration(fileName string) (*Configuration, error) {
 	conf := &Configuration{ FileName : fileName }
 
 	var err error
-	if conf.data, err = ljconf.Load(fileName); err != nil {
-		return nil, NewStackError("Unable to load configuration file - error: %v", err)
-	}
+	if conf.data, err = ljconf.Load(fileName); err != nil { return nil, NewStackError("Unable to load configuration file - error: %v", err) }
 
 	conf.PidFile = conf.data.String("pidFile", "")
 
-	if len(conf.PidFile) == 0 {
-		return nil, NewStackError("Configuration file error - pidFile not set")
-	}
+	if len(conf.PidFile) == 0 { return nil, NewStackError("Configuration file error - pidFile not set") }
 
 	conf.Environment = conf.data.String("environment", "")
 
@@ -69,17 +78,10 @@ func NewConfiguration(fileName string) (*Configuration, error) {
 	conf.Pid = os.Getpid()
 
 	conf.Hostname, err = os.Hostname()
-	if err != nil {
-		return nil, NewStackError("Unable to load hostname - error: %v", err)
-	}
+	if err != nil { return nil, NewStackError("Unable to load hostname - error: %v", err) }
 
-	if len(conf.Version) == 0 {
-		return nil, NewStackError("Configuration file error - version not set")
-	}
-
-	if len(conf.Environment) == 0 {
-		return nil, NewStackError("Configuration file error - environment not set")
-	}
+	if len(conf.Version) == 0 { return nil, NewStackError("Configuration file error - version not set") }
+	if len(conf.Environment) == 0 { return nil, NewStackError("Configuration file error - environment not set") }
 
 	return conf, nil
 }
