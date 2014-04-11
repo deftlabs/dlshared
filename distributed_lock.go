@@ -446,14 +446,10 @@ func (self *mongoDistributedLockDs) ensureLockDefinition() error {
 
 	err := self.FindById(self.lockId, &bson.M{})
 
-	if err != nil && self.NotFoundErr(err) {
-
+	if self.NotFoundErr(err) {
 		// We are going to try and insert the empty lock.
 		err := self.InsertSafe(&bson.M{ "_id": self.lockId, "process": nil, "state": DistributedLockUnlocked, "ts": nil, "when": nil, "who": nil })
-
-		if err != nil && mgo.IsDup(err) { return nil }
-
-		return err
+		if self.IsDupErr(err) { return nil }
 	}
 
 	return err
