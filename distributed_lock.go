@@ -31,6 +31,7 @@ type DistributedLock interface {
 	TryLock() bool
 	Unlock()
 	HasLock() bool
+	LockId() string
 }
 
 const (
@@ -70,11 +71,11 @@ const (
 // 		"who" : "example.net:40000:1350402818:16807:Balancer:282475249",
 // 	}
 //
-// The LockId field maps to the _id field. The "ts" field is the "heartbeat" field. The "why" field was removed to support
+// The lockId field maps to the _id field. The "ts" field is the "heartbeat" field. The "why" field was removed to support
 // the Go Locker interface. When the lock is active, the "state" field is set to 2.
 //
 type MongoDistributedLock struct {
-	LockId string
+	lockId string
 	hostId string
 
 	currentProcessHasLock bool
@@ -146,7 +147,7 @@ func NewMongoDistributedLock(	lockId,
 			lockTimeoutInSec: lockTimeoutInSec,
 		},
 		historyDs: historyDs,
-		LockId: lockId,
+		lockId: lockId,
 		stopWaitGroup: new(sync.WaitGroup),
 		stopChannel: make(chan bool),
 
@@ -182,6 +183,8 @@ func (self *MongoDistributedLock) Lock() {
 	self.lockInUseChannel <- true
 }
 
+func (self *MongoDistributedLock) LockId() string { return self.lockId }
+
 func (self *MongoDistributedLock) TryLock() bool {
 	self.tryLockRequestChannel <- true
 	return <- self.tryLockResponseChannel
@@ -203,7 +206,7 @@ func (self *MongoDistributedLock) expireInactiveLock() {
 	if expired, err := self.ds.expireInactiveLock(); err != nil {
 		self.Logf(Error, "Problem expiring inactive lock: %v", err)
 	} else if expired {
-		self.Logf(Error, "Unlocked lock becase heartbeat is expired - lock %s - host: %s", self.LockId, self.hostId)
+		self.Logf(Error, "Unlocked lock becase heartbeat is expired - lock %s - host: %s", self.lockId, self.hostId)
 	}
 }
 
@@ -212,14 +215,14 @@ func (self *MongoDistributedLock) acquireLock() {
 
 	acquired, err, newLock := self.ds.acquireLock()
 
-	if err != nil { self.Logf(Error, "Problem trying to acquire lock: %s - err: %v", self.LockId, err); return }
+	if err != nil { self.Logf(Error, "Problem trying to acquire lock: %s - err: %v", self.lockId, err); return }
 
 	if acquired {
 		// Store the history, if configured to do so.
 		if self.ds.historyTimeoutInSec > 0 {
 			go func() {
 				if err := self.historyDs.lockAcquired(newLock); err != nil {
-					self.Logf(Error, "Problem adding lock acquired history for lock: %s - err: %v", self.LockId, err)
+					self.Logf(Error, "Problem adding lock acquired history for lock: %s - err: %v", self.lockId, err)
 				}
 			}()
 		}
@@ -232,11 +235,11 @@ func (self *MongoDistributedLock) acquireLock() {
 func (self *MongoDistributedLock) sendHeartbeat() {
 	defer func() { self.stopWaitGroup.Done(); self.heartbeatCompletedChannel <- true }()
 
-	if found, err := self.ds.heartbeat(); err != nil { self.Logf(Error, "Problem trying to send heartbeat - lock: %s - err: %v - timeout may occur if failure continues", self.LockId, err)
+	if found, err := self.ds.heartbeat(); err != nil { self.Logf(Error, "Problem trying to send heartbeat - lock: %s - err: %v - timeout may occur if failure continues", self.lockId, err)
 	} else if !found {
 		// Update the status to make sure we release the local lock.
 		self.lockReleasedChannel <- true
-		self.Logf(Error, "Problem trying to send heartbeat - lock: %s - err-code: %s - lock no longer held locally", self.LockId, DistributedLockErrNoLockDoc)
+		self.Logf(Error, "Problem trying to send heartbeat - lock: %s - err-code: %s - lock no longer held locally", self.lockId, DistributedLockErrNoLockDoc)
 	}
 }
 
@@ -307,12 +310,12 @@ func (self *MongoDistributedLock) releaseLock() {
 	found, err := self.ds.releaseLock()
 
 	if err != nil {
-		self.Logf(Error, "Unable to release lock: %s - hostId: %s - err: %s - err-code: %s", self.LockId, self.hostId, err, DistributedLockErrTimeoutWillOccur)
+		self.Logf(Error, "Unable to release lock: %s - hostId: %s - err: %s - err-code: %s", self.lockId, self.hostId, err, DistributedLockErrTimeoutWillOccur)
 	}
 
 	if self.ds.historyTimeoutInSec > 0 && err != nil && found {
 		if err := self.historyDs.lockReleased(); err != nil {
-			self.Logf(Error, "Unable to log history for release - lock: %s - host id: %s - err: %v", self.LockId, self.hostId, err)
+			self.Logf(Error, "Unable to log history for release - lock: %s - host id: %s - err: %v", self.lockId, self.hostId, err)
 		}
 	}
 }
