@@ -47,13 +47,18 @@ type Component struct {
 	stopMethodName string
 }
 
+// Returns true if the component is present. This panics if the component id is empty.
+func (self *Kernel) HasComponent(componentId string) (found bool) {
+	panicIfComponentIdNotSet(componentId)
+	_, found = self.Components[componentId]
+	return
+}
+
 // Access another component. This method will panic if you attempt to reference a
 // non-existent component. If the component id has a length of zero, it is also panics.
 func (self *Kernel) GetComponent(componentId string) interface{} {
 
-	if len(componentId) == 0 {
-		panic("kernel.GetComponent called with an empty component id")
-	}
+	panicIfComponentIdNotSet(componentId)
 
 	if _, found := self.Components[componentId]; !found {
 		panic(fmt.Sprintf("kernel.GetComponent called with an invalid component id: %s", componentId))
@@ -62,8 +67,12 @@ func (self *Kernel) GetComponent(componentId string) interface{} {
 	return self.Components[componentId].singleton.(interface{})
 }
 
-// Register a component with a start and stop methods.
+func panicIfComponentIdNotSet(componentId string) { if len(componentId) == 0 { panic("kernel.GetComponent called with an empty component id") } }
+
+// Register a component with a start and stop methods. This method will panic if a nil component is passed.
 func (self *Kernel) AddComponentWithStartStopMethods(componentId string, singleton interface{}, startMethodName, stopMethodName string) {
+
+	if singleton == nil { panic(fmt.Sprintf("Nil component passed to kernel for id: %s", componentId)) }
 
 	component := Component{ componentId : componentId, singleton : singleton, startMethodName : startMethodName, stopMethodName : stopMethodName }
 
