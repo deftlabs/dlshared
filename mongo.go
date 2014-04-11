@@ -154,14 +154,14 @@ func (self *Mongo) Start(kernel *Kernel) error {
 
 	// This is a configuration based creation. Load the config data first.
 	if len(self.configPath) > 0 {
-		self.mongoUrl = self.kernel.Configuration.StringWithPath(self.configPath, "mongoUrl", "")
+		self.mongoUrl = kernel.Configuration.StringWithPath(self.configPath, "mongoUrl", "")
 
-		self.connectionType = MongoConnectionType(self.kernel.Configuration.StringWithPath(self.configPath, "type", ""))
-		self.mode = self.kernel.Configuration.StringWithPath(self.configPath, "mode", "")
-		self.dialTimeoutInMs = self.kernel.Configuration.IntWithPath(self.configPath, "dialTimeoutInMs", -1)
-		self.socketTimeoutInMs = self.kernel.Configuration.IntWithPath(self.configPath, "socketTimeoutInMs", -1)
-		self.syncTimeoutInMs = self.kernel.Configuration.IntWithPath(self.configPath, "syncTimeoutInMs", -1)
-		self.cursorTimeoutInMs = self.kernel.Configuration.IntWithPath(self.configPath, "cursorTimeoutInMs", -1)
+		self.connectionType = MongoConnectionType(kernel.Configuration.StringWithPath(self.configPath, "type", ""))
+		self.mode = kernel.Configuration.StringWithPath(self.configPath, "mode", "")
+		self.dialTimeoutInMs = kernel.Configuration.IntWithPath(self.configPath, "dialTimeoutInMs", -1)
+		self.socketTimeoutInMs = kernel.Configuration.IntWithPath(self.configPath, "socketTimeoutInMs", -1)
+		self.syncTimeoutInMs = kernel.Configuration.IntWithPath(self.configPath, "syncTimeoutInMs", -1)
+		self.cursorTimeoutInMs = kernel.Configuration.IntWithPath(self.configPath, "cursorTimeoutInMs", -1)
 	}
 
 	// Validate the params
