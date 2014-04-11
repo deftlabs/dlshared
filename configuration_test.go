@@ -16,20 +16,39 @@
 
 package dlshared
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestLoadConfiguration(t *testing.T) {
 
 	configuration, err := NewConfiguration("test/configuration.json")
+	if err != nil { t.Errorf("NewConfiguration is broken: %v", err); return }
 
-	if err != nil {
-		t.Errorf("NewConfiguration is broken: %v", err)
-		return
-	}
+	intVal := configuration.Int("server.http.port", 0)
+	if intVal  != 9999 { t.Errorf("Configuration server.http.port is broken - expected 9999 - received: %d", intVal) }
 
-	if configuration.Int("server.http.port", 0) != 9999 {
-		t.Errorf("Configuration server.http.port is broken - expected 9999 - received: %d", configuration.Int("server.http.port", 0))
-		return
-	}
+	intVal = configuration.IntWithPath("mongoDb.testDb", "syncTimeoutInMs", 0)
+	if intVal != 30000 { t.Errorf("Configuration mongoDb.testDb.syncTimeoutInMs is broken - expected 30000 - received: %d", intVal) }
+
+	strVal := configuration.StringWithPath("mongoDb.testDb", "type", "")
+	if strVal != "standalone" { t.Errorf("Configuration mongoDb.testDb.type is broken - expected standalone - received: %s", strVal) }
+
+	interfaceVal := configuration.InterfaceWithPath("mongoDb", "testDb", nil)
+	if interfaceVal == nil { t.Errorf("Configuration mongoDb.testDb is broken - expected interface - received: nil"); return }
+
+	// Make sure the cast is correct
+	_ = interfaceVal.(map[string]interface{})
+
+	// Load the cron example
+	interfaceVal = configuration.InterfaceWithPath("cron", "scheduled", nil)
+	if interfaceVal == nil { t.Errorf("Configuration cron.scheduled is broken - expected interface - received: nil"); return }
+
+	mapVal := interfaceVal.(map[string]interface{})
+
+	// Pull out the array.
+	nestedSlice, found := mapVal["scheduledFunctions"]
+
+	if !found || nestedSlice == nil { t.Errorf("Configuration cron.scheduled.scheduledFunctions is missing"); return }
 }
 
