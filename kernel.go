@@ -80,7 +80,6 @@ func (self *Kernel) AddComponentWithStartStopMethods(componentId string, singlet
 	self.Components[componentId] = component
 }
 
-
 // Register a component with a start method.
 func (self *Kernel) AddComponentWithStartMethod(componentId string, singleton interface{}, startMethodName string) {
 	self.AddComponentWithStartStopMethods(componentId, singleton, startMethodName, "")
