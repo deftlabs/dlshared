@@ -23,18 +23,42 @@ import (
 )
 
 type Configuration struct {
-
 	Version string
 	PidFile string
 	Pid int
 	Environment string
 	Hostname string
 	FileName string
-
 	data *ljconf.Conf
 }
 
 const confPathKeyPattern = "%s.%s"
+
+func NewConfiguration(fileName string) (*Configuration, error) {
+
+	conf := &Configuration{ FileName : fileName }
+
+	var err error
+	if conf.data, err = ljconf.Load(fileName); err != nil { return nil, NewStackError("Unable to load configuration file - error: %v", err) }
+
+	conf.PidFile = conf.data.String("pidFile", "")
+
+	if len(conf.PidFile) == 0 { return nil, NewStackError("Configuration file error - pidFile not set") }
+
+	conf.Environment = conf.data.String("environment", "")
+
+	conf.Version = conf.data.String("version", "")
+
+	conf.Pid = os.Getpid()
+
+	conf.Hostname, err = os.Hostname()
+	if err != nil { return nil, NewStackError("Unable to load hostname - error: %v", err) }
+
+	if len(conf.Version) == 0 { return nil, NewStackError("Configuration file error - version not set") }
+	if len(conf.Environment) == 0 { return nil, NewStackError("Configuration file error - environment not set") }
+
+	return conf, nil
+}
 
 func (self *Configuration) String(key string, def string) string { return self.data.String(key, def) }
 
@@ -65,30 +89,4 @@ func (self *Configuration) Interface(key string, def interface{}) interface{} { 
 func (self *Configuration) InterfaceWithPath(path, key string, def interface{}) interface{} { return self.Interface(fmt.Sprintf(confPathKeyPattern, path, key), def) }
 
 func (self *Configuration) EnvironmentIs(expected string) bool { return self.Environment == expected }
-
-func NewConfiguration(fileName string) (*Configuration, error) {
-
-	conf := &Configuration{ FileName : fileName }
-
-	var err error
-	if conf.data, err = ljconf.Load(fileName); err != nil { return nil, NewStackError("Unable to load configuration file - error: %v", err) }
-
-	conf.PidFile = conf.data.String("pidFile", "")
-
-	if len(conf.PidFile) == 0 { return nil, NewStackError("Configuration file error - pidFile not set") }
-
-	conf.Environment = conf.data.String("environment", "")
-
-	conf.Version = conf.data.String("version", "")
-
-	conf.Pid = os.Getpid()
-
-	conf.Hostname, err = os.Hostname()
-	if err != nil { return nil, NewStackError("Unable to load hostname - error: %v", err) }
-
-	if len(conf.Version) == 0 { return nil, NewStackError("Configuration file error - version not set") }
-	if len(conf.Environment) == 0 { return nil, NewStackError("Configuration file error - environment not set") }
-
-	return conf, nil
-}
 
