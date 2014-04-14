@@ -16,10 +16,22 @@
 
 package dlshared
 
+import (
+	"os/exec"
+)
+
 const testConfigFileName = "test/configuration.json"
+
+func baseTestResetDb() error {
+	cmd := exec.Command("mongo", "--quiet", "--host", "127.0.0.1", "--port", "28000", "test/init_db.js")
+	return cmd.Run()
+}
 
 // Create the test kernel. This creates and adds a mongo and distributed lock component.
 func baseTestStartKernel(testName string, addComponentsFunc func(kernel *Kernel)) (*Kernel, error) {
+
+	// Call mongo to reset the database.
+	if err := baseTestResetDb(); err != nil { return nil, err }
 
 	lock := NewMongoDistributedLock("testLockId", "MongoTestDb", "test", "locks", 1, 1, 2, 86400)
 
