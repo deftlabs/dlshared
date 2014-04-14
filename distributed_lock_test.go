@@ -25,14 +25,11 @@ import (
 // Test the distributed lock. This requires mongo running on localhost, port 28000
 func TestDistributedLock(t *testing.T) {
 
-	lock := NewMongoDistributedLock("testLockId", "MongoTestDb", "test", "locks", 1, 1, 2, 86400)
-
-	kernel, err := StartKernel("disritbutedLockTest", "test/configuration.json", func(kernel *Kernel) {
-	 	kernel.AddComponentWithStartStopMethods("MongoTestDb", NewMongoFromConfigPath("MongoConfigDb", "mongoDb.testDb"), "Start", "Stop")
-	 	kernel.AddComponentWithStartStopMethods("DistributedLock", lock, "Start", "Stop")
-	})
+	kernel, err := baseTestStartKernel("distributedLockTest", func(kernel *Kernel) {})
 
 	if err != nil { t.Errorf("TestDistributedLock start kernel is broken:", err); return }
+
+	lock := kernel.GetComponent("DistributedLock").(DistributedLock)
 
 	testLockUnlock(lock)
 
@@ -69,5 +66,4 @@ func testLockUnlock(lock DistributedLock) {
 	lock.Lock()
 	lock.Unlock()
 }
-
 
