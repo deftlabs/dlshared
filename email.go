@@ -243,6 +243,7 @@ func (self *AwsEmailSvc) SendHtmlEmailToOneAddress(from, to, subject, htmlTempla
 
 	// Render the templates.
 	bodyHtml, bodyText, err := self.templateSvc.RenderHtmlAndText(htmlTemplateFileName, textTemplateFileName, params)
+	if err != nil { return NewStackError("Unable to render html and text") }
 
 	// Send the email to the user.
 	response, err := self.awsEmailDs.SendHtmlEmailToOneAddress(from, to, subject, bodyHtml, bodyText)
