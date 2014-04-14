@@ -36,6 +36,8 @@
 			"auditCollectionName": "cron.audit",
 			"auditTimeoutInSec": 126144000,
 
+			"monitorScheduledFreqInSec": 1,
+
 			"distributedLockComponentId": "DistributedLock",
 
 			"scheduledFunctions": [
