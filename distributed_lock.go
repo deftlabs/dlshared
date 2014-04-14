@@ -123,7 +123,7 @@ func NewMongoDistributedLock(	lockId,
 								collectionName string,
 								heartbeatFreqInSec,
 								lockCheckFreqInSec,
-								lockTimeoutInSec int64,
+								lockTimeoutInSec int,
 								historyTimeoutInSec int) DistributedLock {
 
 	var historyDs *mongoDistributedLockHistoryDs
@@ -375,7 +375,7 @@ type mongoDistributedLockDs struct {
 	historyTimeoutInSec int
 	lockId string
 	mongoComponentId string
-	lockTimeoutInSec int64
+	lockTimeoutInSec int
 	hostId string
 }
 
@@ -384,7 +384,7 @@ type mongoDistributedLockHistoryDs struct {
 	historyTimeoutInSec int
 	lockId string
 	mongoComponentId string
-	lockTimeoutInSec int64
+	lockTimeoutInSec int
 	hostId string
 }
 
