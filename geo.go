@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// This is a thin wrapper around libgeo, which is built on top of MaxMind's geo databases. Currently
-// this only supports IPV4 addresses.
 package dlshared
 
 import "github.com/nranchev/go-libGeoIP"
@@ -45,12 +43,15 @@ func convertLibGeoLocation(loc *libgeo.Location) *GeoLocation {
 	}
 }
 
+// The geo location service interface.
 type GeoLocationSvc interface {
 	LocationByIp(ipAddress string) *GeoLocation
 	Start() error
 	Stop() error
 }
 
+// This is a thin wrapper around libgeo, which is built on top of MaxMind's geo databases. Currently
+// this only supports IPV4 addresses.
 type MaxMindLocationSvc struct {
 	geoIp *libgeo.GeoIP
 	dbFile string
