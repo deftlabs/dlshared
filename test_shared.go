@@ -33,11 +33,9 @@ func baseTestStartKernel(testName string, addComponentsFunc func(kernel *Kernel)
 	// Call mongo to reset the database.
 	if err := baseTestResetDb(); err != nil { return nil, err }
 
-	lock := NewMongoDistributedLock("testLockId", "MongoTestDb", "test", "locks", 1, 1, 2, 86400)
-
 	kernel, err := StartKernel(testName, testConfigFileName, func(kernel *Kernel) {
 		kernel.AddComponentWithStartStopMethods("MongoTestDb", NewMongoFromConfigPath("MongoConfigDb", "mongoDb.testDb"), "Start", "Stop")
-		kernel.AddComponentWithStartStopMethods("DistributedLock", lock, "Start", "Stop")
+		kernel.AddComponentWithStartStopMethods("DistributedLock", NewMongoDistributedLock("testLockId", "MongoTestDb", "test", "locks", 1, 1, 2, 86400), "Start", "Stop")
 		addComponentsFunc(kernel)
 	})
 
