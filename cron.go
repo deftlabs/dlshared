@@ -145,10 +145,11 @@ func (self *CronSvc) cronJobEnabled(jobId string) bool {
 }
 
 func (self *CronSvc) signalRunningCronJobsIfDistributedLockLost() {
-	haveDistributedLock := self.distributedLock.HasLock()
 
 	self.lock.Lock()
 	defer self.lock.Unlock()
+
+	haveDistributedLock := self.distributedLock.HasLock()
 
 	for jobId, def := range self.cronJobDefinitions {
 		if !haveDistributedLock && def.RequiresDistributedLock {
@@ -298,17 +299,20 @@ func (self *CronSvc) addFunc(jobId, schedule string, cmd func(chan bool)) error 
 
 		interruptChannel := self.createAndAddInterruptChannel(jobId)
 
+		var maxRunTimer *time.Timer
+
 		if maxRunTimeEnabled {
-			go func(interruptChannel chan bool, timeout int) {
-				time.Sleep(time.Duration(timeout) * time.Second)
+			maxRunTimer = time.AfterFunc(time.Duration(self.cronJobMaxRunTimeInSec(jobId)) * time.Second, func() {
 				interruptChannel <- true
-			}(interruptChannel, self.cronJobMaxRunTimeInSec(jobId))
+			})
 		}
 
 		startTime := time.Now()
 
 		// The actual function call. This already wraps a panic catch/recover.
 		cmd(interruptChannel)
+
+		if maxRunTimeEnabled { maxRunTimer.Stop() }
 
 		elapsedTime := time.Since(startTime)
 
