@@ -91,6 +91,10 @@ func GetMethodValueByName(val interface{}, methodName string, allowedArgs, allow
 
 func CallNoParamNoReturnValueMethod(val interface{}, methodValue reflect.Value) { methodValue.Call(make([]reflect.Value, 0)) }
 
+func CallBoolChanParamNoReturnValueMethod(val interface{}, methodValue reflect.Value, channel chan bool) {
+	methodValue.Call([]reflect.Value{ reflect.ValueOf(channel) })
+}
+
 func reflectRemoveFilePathIfPresent(val string) string {
 	if i := strings.LastIndex(val, "/"); i > -1 { val = val[i+1:len(val)] }
 	return val

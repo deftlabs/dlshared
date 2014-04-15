@@ -18,12 +18,29 @@ package dlshared
 
 import "testing"
 
-type reflectionTestStruct struct { }
-func (self *reflectionTestStruct) Hello() { }
+type reflectionTestStruct struct {
+	helloCalled bool
+	channelTestCalled bool
+}
+
+func (self *reflectionTestStruct) Hello() { self.helloCalled = true }
 func (self *reflectionTestStruct) Method0(value string) { }
 func (self *reflectionTestStruct) Method1() error { return nil }
 func (self *reflectionTestStruct) Method2(value1, value2 string) { }
 func (self *reflectionTestStruct) Method3() (error, error) { return nil, nil }
+func (self *reflectionTestStruct) ChannelTest(channel chan bool) { self.channelTestCalled = true }
+
+func TestCallBoolChanParamNoReturnValueMethod(t *testing.T) {
+
+	val := &reflectionTestStruct{}
+
+	err, methodValue := GetMethodValueByName(val, "ChannelTest", 1, 0)
+	if err != nil { t.Errorf("TestCallBoolChanParamNoReturnValueMethod failed with %v", err) }
+
+	CallBoolChanParamNoReturnValueMethod(val, methodValue, make(chan bool))
+
+	if !val.channelTestCalled { t.Errorf("TestCallBoolChanParamNoReturnValueMethod failed - ChannelTest method not called") }
+}
 
 func TestCallNoParamNoReturnValueMethod(t *testing.T) {
 
@@ -34,6 +51,7 @@ func TestCallNoParamNoReturnValueMethod(t *testing.T) {
 
 	CallNoParamNoReturnValueMethod(val, methodValue)
 
+	if !val.helloCalled { t.Errorf("TestCallNoParamNoReturnValueMethodfailed - Hello method not called") }
 }
 
 func TestGetMethodValueByName(t *testing.T) {
