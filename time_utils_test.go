@@ -18,39 +18,36 @@ package dlshared
 
 import (
 	"time"
+	"math"
 	"testing"
 )
+
+func TestDurationToMillis(t *testing.T) {
+
+	start := time.Now()
+	time.Sleep(time.Duration(20) * time.Millisecond)
+	elapsed := time.Since(start)
+
+	if DurationToMillis(&elapsed) > 22 { t.Errorf("TestDurationToMillis is broken - received out of range response") }
+
+	longDuration := time.Duration(math.MinInt32) * time.Millisecond
+	DurationToMillis(&longDuration)
+}
 
 func TestTimeToMillis(t *testing.T) {
 	location, err := time.LoadLocation("UTC")
 
-	if err != nil {
-		t.Errorf("TestTimeToMillis is broken - load location error: %v", err)
-	}
+	if err != nil { t.Errorf("TestTimeToMillis is broken - load location error: %v", err) }
 
 	tv := time.Date(2014, 1, 29, 14, 14, 32, 0, location)
 	millis := TimeToMillis(&tv)
 
-	if millis !=  1391004872000 {
-		t.Errorf("TestTimeToMillis is broken - expected millis: 1391004872000 - received:  %d", millis)
-	}
+	if millis !=  1391004872000 { t.Errorf("TestTimeToMillis is broken - expected millis: 1391004872000 - received:  %d", millis) }
 }
 
-func TestNowTimeUnixStr(t *testing.T) {
-	if str := NowTimeUnixStr(); len(str) == 0 {
-		t.Errorf("NowTimeUnixStr is broken - result is empty")
-	}
-}
+func TestNowTimeUnixStr(t *testing.T) { if str := NowTimeUnixStr(); len(str) == 0 { t.Errorf("NowTimeUnixStr is broken - result is empty") } }
 
-func TestCurrentTimeInMillis(t *testing.T) {
-	if millis := CurrentTimeInMillis(); millis <= 0 {
-		t.Errorf("CurrentTimeInMillis is broken")
-	}
-}
+func TestCurrentTimeInMillis(t *testing.T) { if millis := CurrentTimeInMillis(); millis <= 0 { t.Errorf("CurrentTimeInMillis is broken") } }
 
-func TestCurrentTimeInSeconds(t *testing.T) {
-	if seconds := CurrentTimeInSeconds(); seconds <= 0 {
-		t.Errorf("CurrentTimeInSeconds is broken")
-	}
-}
+func TestCurrentTimeInSeconds(t *testing.T) { if seconds := CurrentTimeInSeconds(); seconds <= 0 { t.Errorf("CurrentTimeInSeconds is broken") } }
 
