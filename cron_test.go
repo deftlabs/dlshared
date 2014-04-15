@@ -24,21 +24,37 @@ import (
 
 type testCronTestComponent struct {
 	waitGroup *sync.WaitGroup
-
 	runCalledCount int
-	testCalledCount int
+	interruptCalledCount int
+	interruptReceived bool
+	lock *sync.Mutex
 }
 
-func (self *testCronTestComponent) Run() {
+func (self *testCronTestComponent) Run(interruptChannel chan bool) {
 	self.waitGroup.Add(1)
+	defer self.waitGroup.Done()
+
+	self.lock.Lock()
 	self.runCalledCount++
-	self.waitGroup.Done()
+	self.lock.Unlock()
+
+	time.Sleep(1* time.Millisecond)
 }
 
-func (self *testCronTestComponent) Test() {
+func (self *testCronTestComponent) Interrupt(interruptChannel chan bool) {
 	self.waitGroup.Add(1)
-	self.testCalledCount++
-	self.waitGroup.Done()
+	defer self.waitGroup.Done()
+
+	self.lock.Lock()
+	self.interruptCalledCount++
+	self.lock.Unlock()
+
+	<- interruptChannel // wait for the signal
+
+	self.lock.Lock()
+	self.interruptReceived = true
+	self.lock.Unlock()
+
 }
 
 // Test the cron services.
@@ -46,12 +62,10 @@ func TestCron(t *testing.T) {
 
 	waitGroup := new(sync.WaitGroup)
 
-	testComponent := &testCronTestComponent{ waitGroup: waitGroup }
+	testComponent := &testCronTestComponent{ waitGroup: waitGroup, lock: new(sync.Mutex) }
 
 	kernel, err := baseTestStartKernel("cronTest", func(kernel *Kernel) {
-
 		kernel.AddComponent("testCronTestComponent", testComponent)
-
 		kernel.AddComponentWithStartStopMethods("CronSvc", NewCronSvc("cron.scheduled"), "Start", "Stop")
 	})
 
@@ -59,11 +73,14 @@ func TestCron(t *testing.T) {
 
 	waitGroup.Wait()
 
-	time.Sleep(2*time.Second)
+	time.Sleep(4*time.Second)
 
-	if testComponent.runCalledCount == 0 { t.Errorf("TestCron Run() not called") }
-
-	if testComponent.testCalledCount == 0 { t.Errorf("TestCron Test() not called") }
+	// We have multiple goroutines modifying the
+	testComponent.lock.Lock()
+	if testComponent.runCalledCount == 0 { t.Errorf("TestCron Run(chan) not called") }
+	if testComponent.interruptCalledCount == 0 { t.Errorf("TestCron Interrupt(chan) not called") }
+	if !testComponent.interruptReceived { t.Errorf("TestCron Interrupt(chan) was not interrupted") }
+	testComponent.lock.Unlock()
 
 	if err := kernel.Stop(); err != nil { t.Errorf("TestCron stop kernel is broken:", err) }
 }
