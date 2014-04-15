@@ -34,6 +34,7 @@ type cronJobDefinition struct {
 	RequiresDistributedLock bool `bson:"requiresDistributedLock"`
 	Audit bool `bson:"audit"`
 	Enabled bool `bson:"enabled"`
+	MaxRunTimeInSec int `bson:"maxRunTimeInSec"`
 	Created *time.Time `bson:"created"`
 }
 
@@ -62,8 +63,23 @@ type cronJobDefinition struct {
 //            "distributedLockComponentId": "MyDistributedLock",
 //
 //            "scheduledFunctions": [
-//                { "jobId": "testCronJob-Run", "componentId": "testComponentId", "methodName": "Run", "schedule": "0 30 * * * *", "requiresDistributedLock": true, "audit": true, enabled: true },
-//                { "jobId": "testCronJob-Test", "componentId": "testComponentId", "methodName": "Test", "schedule": "0 30 * * * *", "requiresDistributedLock": true, "audit": true, enabled: false }
+//                { "jobId": "testCronJob-Run",
+//                  "componentId": "testComponentId",
+//                  "methodName": "Run",
+//                  "schedule": "0 30 * * * *",
+//                  "requiresDistributedLock": true,
+//                  "audit": true,
+//                  "enabled": true,
+//                  "maxRunTimeInSec": 30},
+//
+//                { "jobId": "testCronJob-Test",
+//                  "componentId": "testComponentId",
+//                  "methodName": "Test",
+//                  "schedule": "0 30 * * * *",
+//                  "requiresDistributedLock": true,
+//                  "audit": true,
+//                  "enabled": false,
+//                  "maxRunTimeInSec": 30 }
 //            ]
 //        }
 //    }
@@ -71,11 +87,15 @@ type cronJobDefinition struct {
 // The configPath for this component would be "cron.scheduled". The path can be any arbitrary set of nested
 // json documents (json path). If the path is incorrect, the Start() method will panic when called by the kernel.
 // The configuration file currently only supports scheduling methods by component id. You need to register your
-// component in the kernel and define the method name as a member of that struct. The method cannot not take
-// any params and cannot return any values. The method must also be declared public (i.e., the first character
-// must be uppercase). The method name should not have a bracket/parentheses. When defining scheduled methods,
-// the job ids must be unique or the service will error on Start. You can disable the db audit for jobs by setting "audit"
-// to false in the scheduled method. If you set the auditTimeoutInSec to zero, then it will never timeout the audit/history.
+// component in the kernel and define the method name as a member of that struct. The method must take a single bool
+// channel param and cannot return any values. The boolean channel is used to signal the job to stop. A stop signal can occur
+// if the maxRunTimeInSec is exceeded or if the process is stopped.
+// The method must also be declared public (i.e., the first character must be uppercase). The method name should not
+// have a bracket/parentheses. When defining scheduled methods, the job ids must be unique or the service will error on Start.
+// You can disable the db audit for jobs by setting "audit" to false in the scheduled method. Disabling the audit is usually
+// not recommended.
+//
+// If you set the auditTimeoutInSec to zero, then it will never timeout the audit/history.
 // When the auditTimeoutInSec is greater than zero, it will remove the audit/history from the database after the configured
 // number of seconds. Ten years in seconds is ~: 315360000 (leap year etc. not included simply 86,400 * 365 * 10).
 //
@@ -86,6 +106,9 @@ type cronJobDefinition struct {
 //
 // If you change "enabled" for a scheduled function in the database directly, the app will update after a bit. The component
 // polls the db for changes.
+//
+// See cron_test.go for usage example.
+//
 type CronSvc struct {
 	cron *cron.Cron
 	configPath string
@@ -98,6 +121,7 @@ type CronSvc struct {
 	stopChannel chan bool
 	stopWaitGroup *sync.WaitGroup
 	cronJobDefMonitorTicker *time.Ticker
+	interruptChannels map[string]chan bool
 }
 
 func NewCronSvc(configPath string) *CronSvc {
@@ -110,6 +134,7 @@ func NewCronSvc(configPath string) *CronSvc {
 		cronJobDefinitions: make(map[string]*cronJobDefinition),
 		stopChannel: make(chan bool),
 		stopWaitGroup: new(sync.WaitGroup),
+		interruptChannels: make(map[string]chan bool),
 	}
 }
 
@@ -118,6 +143,23 @@ func (self *CronSvc) cronJobEnabled(jobId string) bool {
 	defer self.lock.RUnlock()
 	return self.cronJobDefinitions[jobId].Enabled
 }
+
+func (self *CronSvc) signalRunningCronJobsIfDistributedLockLost() {
+	haveDistributedLock := self.distributedLock.HasLock()
+
+	self.lock.Lock()
+	defer self.lock.Unlock()
+
+	for jobId, def := range self.cronJobDefinitions {
+		if !haveDistributedLock && def.RequiresDistributedLock {
+			if channel, found := self.interruptChannels[jobId]; found {
+				channel <- true
+				delete(self.interruptChannels, jobId)
+			}
+		}
+	}
+}
+
 
 // Returns true if the cron job has audit enabled. If audit is enabled, a job
 // run id is returned. The job run id is used the audit table to link a job start
@@ -130,10 +172,80 @@ func (self *CronSvc) cronJobAuditEnabled(jobId string) (enabled bool, jobRunId *
 	return
 }
 
+// Returns true if the cron job has interrupt enabled. If interrupt is enabled, after N seconds
+// a kill signal will be sent to the job.
+func (self *CronSvc) cronJobMaxRunTimeEnabled(jobId string) bool {
+	self.lock.RLock()
+	defer self.lock.RUnlock()
+	return self.cronJobDefinitions[jobId].MaxRunTimeInSec > 0
+}
+
+func (self *CronSvc) cronJobMaxRunTimeInSec(jobId string) int {
+	self.lock.RLock()
+	defer self.lock.RUnlock()
+	return self.cronJobDefinitions[jobId].MaxRunTimeInSec
+}
+
 func (self *CronSvc) cronJobRequiresDistributedLock(jobId string) bool {
 	self.lock.RLock()
 	defer self.lock.RUnlock()
 	return self.cronJobDefinitions[jobId].RequiresDistributedLock
+}
+
+func (self *CronSvc) signalAndRemoveAllInterruptChannels() {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+
+	for jobId, channel := range self.interruptChannels {
+		channel <- true
+		delete(self.interruptChannels, jobId)
+	}
+}
+
+func (self *CronSvc) signalAndRemoveInterruptChannel(jobId string) {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+
+	// An interrupt channel can be missing on shutdown.
+	if c, found := self.interruptChannels[jobId]; found {
+		c <- true
+		delete(self.interruptChannels, jobId)
+	}
+}
+
+func (self *CronSvc) removeInterruptChannel(jobId string) {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+	delete(self.interruptChannels, jobId)
+}
+
+func (self *CronSvc) createAndAddInterruptChannel(jobId string) (chan bool) {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+
+	interruptChannel := make(chan bool, 3)
+
+	if c, found := self.interruptChannels[jobId]; found {
+		self.Logf(Warn, "Interrupting cron job that was still running at next execution time - jobId: %s - perhaps adjust maxRunTimeInSec", jobId)
+		c <- true
+		delete(self.interruptChannels, jobId)
+	}
+
+	self.interruptChannels[jobId] = interruptChannel
+
+	return interruptChannel
+}
+
+func (self *CronSvc) addInterruptChannel(jobId string, interruptChannel chan bool) {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+
+	if c, found := self.interruptChannels[jobId]; found {
+		self.Logf(Error, "State bug - found an interrupt channel for job id: %s - interrupting", jobId)
+		c <- true
+	}
+
+	self.interruptChannels[jobId] = interruptChannel
 }
 
 // Update the cron job definition. Currently, you can only update enabled/disabled, audit and requires distributed lock.
@@ -167,8 +279,12 @@ func (self *CronSvc) lookupCronJobDef(jobId string) *cronJobDefinition {
 
 // Add a function. This call adds a wrapper around the function which handles locking
 // and auditing (both if enabled).
-func (self *CronSvc) addFunc(jobId, schedule string, cmd func()) error {
+func (self *CronSvc) addFunc(jobId, schedule string, cmd func(chan bool)) error {
 	return self.cron.AddFunc(schedule, func() {
+
+		// This keeps the service from stopping until the interrupted jobs return.
+		self.stopWaitGroup.Add(1)
+		defer self.stopWaitGroup.Done()
 
 		if !self.cronJobEnabled(jobId) { return }
 
@@ -176,11 +292,29 @@ func (self *CronSvc) addFunc(jobId, schedule string, cmd func()) error {
 
 		auditEnabled, jobRunId := self.cronJobAuditEnabled(jobId)
 
+		maxRunTimeEnabled := self.cronJobMaxRunTimeEnabled(jobId)
+
 		if auditEnabled { self.auditDs.start(self.lookupCronJobDef(jobId), jobRunId, time.Now()) }
 
-		cmd()
+		interruptChannel := self.createAndAddInterruptChannel(jobId)
 
-		if auditEnabled { self.auditDs.end(self.lookupCronJobDef(jobId), jobRunId, time.Now()) }
+		if maxRunTimeEnabled {
+			go func(interruptChannel chan bool, timeout int) {
+				time.Sleep(time.Duration(timeout) * time.Second)
+				interruptChannel <- true
+			}(interruptChannel, self.cronJobMaxRunTimeInSec(jobId))
+		}
+
+		startTime := time.Now()
+
+		// The actual function call. This already wraps a panic catch/recover.
+		cmd(interruptChannel)
+
+		elapsedTime := time.Since(startTime)
+
+		self.removeInterruptChannel(jobId)
+
+		if auditEnabled { self.auditDs.end(self.lookupCronJobDef(jobId), jobRunId, time.Now(), &elapsedTime) }
 	})
 }
 
@@ -248,6 +382,7 @@ func (self *CronSvc) initJobFromConfig(kernel *Kernel, seenJobIds map[string]boo
 		RequiresDistributedLock : scheduledEntry["requiresDistributedLock"].(bool),
 		Audit: scheduledEntry["audit"].(bool),
 		Enabled: scheduledEntry["enabled"].(bool),
+		MaxRunTimeInSec: int(scheduledEntry["maxRunTimeInSec"].(float64)),
 	}
 
 	if _, found := seenJobIds[cronJobDefinition.Id]; found { return NewStackError("Duplicate cron job id - jobId: %s", cronJobDefinition.Id)
@@ -261,7 +396,7 @@ func (self *CronSvc) initJobFromConfig(kernel *Kernel, seenJobIds map[string]boo
 	component := kernel.GetComponent(cronJobDefinition.ComponentId)
 
 	// Load the method and verify.
-	err, methodValue := GetMethodValueByName(component, cronJobDefinition.MethodName, 0, 0)
+	err, methodValue := GetMethodValueByName(component, cronJobDefinition.MethodName, 1, 0)
 	if err != nil { return NewStackError("Invalid method: %s on component: %s", cronJobDefinition.MethodName, cronJobDefinition.ComponentId) }
 
 	// Ensure the definition is in the database
@@ -270,14 +405,14 @@ func (self *CronSvc) initJobFromConfig(kernel *Kernel, seenJobIds map[string]boo
 	self.cronJobDefinitions[cronJobDefinition.Id] = cronJobDefinition
 
 	// Create the method call that can recover from a panic.
-	methodCall := func() {
+	methodCall := func(interruptChannel chan bool) {
 		defer func() {
 			if r := recover(); r != nil {
 				self.Logf(Error, "WTF - a panic calling cron method: %s - component: %s - problem: %v", cronJobDefinition.MethodName, cronJobDefinition.ComponentId, r)
 			}
 		}()
 
-		CallNoParamNoReturnValueMethod(component, methodValue)
+		CallBoolChanParamNoReturnValueMethod(component, methodValue, interruptChannel)
 	}
 
 	// Add the fuction to the cron.
@@ -301,13 +436,28 @@ func (self *CronSvc) Start(kernel *Kernel) error {
 
 	self.cron.Start()
 
-	self.stopWaitGroup.Add(1)
 	go self.monitorCronJobDefinitions()
+	go self.monitorCronJobsAndDistributedLock()
 
 	return nil
 }
 
+func (self *CronSvc) monitorCronJobsAndDistributedLock() {
+	self.stopWaitGroup.Add(1)
+	defer self.stopWaitGroup.Done()
+
+	ticker := time.NewTicker(2 * time.Second)
+
+	for {
+		select {
+			case <- ticker.C: self.signalRunningCronJobsIfDistributedLockLost()
+			case <- self.stopChannel: return
+		}
+	}
+}
+
 func (self *CronSvc) monitorCronJobDefinitions() {
+	self.stopWaitGroup.Add(1)
 	defer self.stopWaitGroup.Done()
 	for {
 		select {
@@ -323,8 +473,10 @@ func (self *CronSvc) monitorCronJobDefinitions() {
 }
 
 func (self *CronSvc) Stop(kernel *Kernel) error {
-	self.stopChannel <- true
 	self.cron.Stop()
+	self.stopChannel <- true
+	self.stopChannel <- true
+	self.signalAndRemoveAllInterruptChannels()
 	self.stopWaitGroup.Wait()
 	return nil
 }
@@ -360,42 +512,53 @@ type cronAuditDs struct {
 }
 
 func (self *cronAuditDs) start(def *cronJobDefinition, jobRunId *bson.ObjectId, now time.Time) {
-	go func() {
-		if err := self.InsertSafe(&bson.M{
-			"_id": self.NewObjectId(),
-			"jobId": def.Id,
-			"jobRunId": jobRunId,
-			"componentId": def.ComponentId,
-			"methodName": def.MethodName,
-			"schedule": def.Schedule,
-			"requiresDistributedLock": def.RequiresDistributedLock,
-			"audit": def.Audit,
-			"enabled": def.Enabled,
-			"created": now,
-			"start": true,
-		}); err != nil {
-			self.Logf(Error, "Unable to insert cron start audit - id: %s", def.Id)
+	// We do not want to cause problems with the callers execution of the logic if there is a panic.
+	defer func(jobId string) {
+		if r := recover(); r != nil {
+			self.Logf(Error, "cron audit start panicked - jobId: %s - problem: %v", jobId, r)
 		}
-	}()
+	}(def.Id)
+
+	if err := self.InsertSafe(&bson.M{
+		"_id": self.NewObjectId(),
+		"jobId": def.Id,
+		"jobRunId": jobRunId,
+		"componentId": def.ComponentId,
+		"methodName": def.MethodName,
+		"schedule": def.Schedule,
+		"requiresDistributedLock": def.RequiresDistributedLock,
+		"audit": def.Audit,
+		"enabled": def.Enabled,
+		"created": now,
+		"start": true,
+	}); err != nil {
+		self.Logf(Error, "Unable to insert cron start audit - id: %s", def.Id)
+	}
 }
 
-func (self *cronAuditDs) end(def *cronJobDefinition, jobRunId *bson.ObjectId, now time.Time) {
-	go func() {
-		if err := self.InsertSafe(&bson.M{
-			"_id": self.NewObjectId(),
-			"jobId": def.Id,
-			"jobRunId": jobRunId,
-			"componentId": def.ComponentId,
-			"methodName": def.MethodName,
-			"schedule": def.Schedule,
-			"requiresDistributedLock": def.RequiresDistributedLock,
-			"audit": def.Audit,
-			"enabled": def.Enabled,
-			"created": now,
-			"start": false,
-		}); err != nil {
-			self.Logf(Error, "Unable to insert cron end audit - id: %s", def.Id)
+func (self *cronAuditDs) end(def *cronJobDefinition, jobRunId *bson.ObjectId, now time.Time, elapsedTime *time.Duration) {
+	// We do not want to cause problems with the callers execution of the logic if there is a panic.
+	defer func(jobId string) {
+		if r := recover(); r != nil {
+			self.Logf(Error, "cron audit end panicked - jobId: %s - problem: %v", jobId, r)
 		}
-	}()
+	}(def.Id)
+
+	if err := self.InsertSafe(&bson.M{
+		"_id": self.NewObjectId(),
+		"jobId": def.Id,
+		"jobRunId": jobRunId,
+		"componentId": def.ComponentId,
+		"methodName": def.MethodName,
+		"schedule": def.Schedule,
+		"requiresDistributedLock": def.RequiresDistributedLock,
+		"audit": def.Audit,
+		"enabled": def.Enabled,
+		"created": now,
+		"start": false,
+		"runTimeInMs": DurationToMillis(elapsedTime),
+	}); err != nil {
+		self.Logf(Error, "Unable to insert cron end audit - id: %s", def.Id)
+	}
 }
 
