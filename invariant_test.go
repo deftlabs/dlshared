@@ -28,6 +28,28 @@ type structPointerTest struct {
 	name string
 }
 
+func TestDeleteMissingKeyInMap(t *testing.T) {
+
+
+	delete(make(map[string]string, 0), "missing")
+
+}
+
+func TestDeletingKeysInMapWhileInRange(t *testing.T) {
+
+	test := map[string]string { "test0": "value", "test1": "value", "test2": "value" }
+
+	count := 0
+
+	for key, _ := range test { delete(test, key); count++ }
+
+	if count != 3 { t.Errorf("TestDeletingKeysInMapWhileInRange is broken - count off") }
+
+	if len(test) != 0 { t.Errorf("TestDeletingKeysInMapWhileInRange is broken - length not zero") }
+
+	for _, _ = range test {  }
+}
+
 func TestNilErr(t *testing.T) {
 	if nil == mgo.ErrNotFound { t.Errorf("TestNilErr is broken - mgo not found matches nil") }
 	if mgo.IsDup(nil) { t.Errorf("TestNilErr is broken - is dup matches nil") }
