@@ -56,7 +56,7 @@
 					"jobId": "testCronJob-Interrupt",
 					"componentId": "testCronTestComponent",
 					"methodName": "Interrupt",
-					"schedule": "* * * * * *",
+					"schedule": "*/2 * * * * *",
 					"requiresDistributedLock": true,
 					"audit": true,
 					"enabled": true,
