@@ -48,17 +48,19 @@
 					"schedule": "* * * * * *",
 					"requiresDistributedLock": true,
 					"audit": true,
-					"enabled": true
+					"enabled": true,
+					"maxRunTimeInSec": 2
 				},
 
 				{
-					"jobId": "testCronJob-Test",
+					"jobId": "testCronJob-Interrupt",
 					"componentId": "testCronTestComponent",
-					"methodName": "Test",
+					"methodName": "Interrupt",
 					"schedule": "* * * * * *",
 					"requiresDistributedLock": true,
 					"audit": true,
-					"enabled": true
+					"enabled": true,
+					"maxRunTimeInSec": 1
 				}
 			]
 		}
