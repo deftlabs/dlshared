@@ -22,14 +22,14 @@ import (
 )
 
 const (
-	NanosecondsPerMillisecond = 1000000.0
+	nanosecondsPerMillisecond float64 = 1000000.0
 )
 
 // Convert a time struct to milliseconds since epoch.
 func TimeToMillis(tv *time.Time) int64 { return tv.UnixNano() / 1e6 }
 
 // Convert a duration to milliseconds.
-func DurationToMillis(dur *time.Duration) int64 { return int64(float64(dur.Nanoseconds()) / NanosecondsPerMillisecond) }
+func DurationToMillis(dur *time.Duration) int64 { return int64(float64(dur.Nanoseconds()) / nanosecondsPerMillisecond) }
 
 // Get the current time in millis since epoch. Source from stackoverflow:
 // http://stackoverflow.com/questions/6161839/go-time-milliseconds
