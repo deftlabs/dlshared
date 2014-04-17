@@ -28,12 +28,21 @@ type structPointerTest struct {
 	name string
 }
 
-func TestDeleteMissingKeyInMap(t *testing.T) {
+func TestClosures(t *testing.T) {
 
+	counter := testClosureMethod()
 
-	delete(make(map[string]string, 0), "missing")
+	for i := 0; i < 9; i++ { counter() }
 
+	if counter() != 10 { t.Errorf("TestClosures is broken - count off") }
 }
+
+func testClosureMethod() func() int {
+	count := 0
+	return func() int { count++; return count }
+}
+
+func TestDeleteMissingKeyInMap(t *testing.T) { delete(make(map[string]string, 0), "missing") }
 
 func TestDeletingKeysInMapWhileInRange(t *testing.T) {
 
