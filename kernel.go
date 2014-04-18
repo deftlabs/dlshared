@@ -29,6 +29,13 @@ import (
 
 const (
 	nadaStr = "" // This is internal to dlshared.
+
+	injectLoggerName = "dlshared.Logger"
+	injectLoggerFieldName = "Logger"
+
+	injectConfigurationName = "*dlshared.Configuration"
+	injectConfigurationFieldName = "Configuration"
+
 )
 
 type Kernel struct {
@@ -142,6 +149,8 @@ func (self *Kernel) Start() error {
 
 	self.Logf(Info, "Starting %s - version: %s - config file: %s", self.Id, self.Configuration.Version, self.Configuration.FileName)
 
+	if err := self.injectComponents(); err != nil { return err }
+
 	for i := range self.components {
 		if len(self.components[i].startMethodName) > 0 {
 			if err := callStartStopMethod("start", self.components[i].startMethodName, self.components[i].singleton, self); err != nil {
@@ -151,6 +160,63 @@ func (self *Kernel) Start() error {
 	}
 
 	self.Logf(Info, "Started %s - version: %s - config file: %s ", self.Id, self.Configuration.Version, self.Configuration.FileName)
+
+	return nil
+}
+
+func (self *Kernel) injectComponents() error {
+	// Loop through the components, look at the variables for tags and automatically do the injection
+	// if the tag is set on a field.
+	for componentId, component := range self.Components {
+
+		// Get the value of the component and cast.
+		componentValue := reflect.ValueOf(component.singleton).Elem()
+		componentType := reflect.TypeOf(componentValue.Interface())
+
+		// Loop through the fields.
+		fieldCount := componentType.NumField()
+		for i := 0; i < fieldCount; i++ {
+
+			structField := componentType.Field(i)
+			fieldValue := componentValue.Field(i)
+
+			// Check to see if the tag is set.
+			injectComponentId := structField.Tag.Get("dlinject")
+
+			if len(injectComponentId) == 0 {
+				if structField.Type.String() == injectLoggerName && structField.Name == injectLoggerFieldName {
+					fieldValue.Set(reflect.ValueOf(self.Logger))
+					continue
+				}
+
+				if structField.Type.String() == injectConfigurationName && structField.Name == injectConfigurationFieldName {
+					fieldValue.Set(reflect.ValueOf(self.Configuration))
+					continue
+				}
+
+				continue
+			}
+
+			// Make sure the component is present.
+			injectComponent, found := self.Components[injectComponentId]
+			if !found {
+				return NewStackError(	"Unable to inject component: %s - into component: %s - reason: %s not found",
+										injectComponentId,
+										componentId,
+										injectComponentId)
+			}
+
+			if !fieldValue.CanSet() {
+				return NewStackError(	"Unable to inject component: %s - into component: %s - on field: %s - reason: field not exported",
+										injectComponentId,
+										componentId,
+										structField.Name)
+			}
+
+			// Inject the pointer.
+			fieldValue.Set(reflect.ValueOf(injectComponent.singleton))
+		}
+	}
 
 	return nil
 }
