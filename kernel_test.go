@@ -18,13 +18,14 @@ package dlshared
 
 
 import (
-	//"fmt"
 	"testing"
+	"labix.org/v2/mgo/bson"
 )
 
 type testKernelInjectStruct1 struct {
 	Logger
 	Configuration *Configuration
+	MongoDataSource `dlinject:"MongoTestDb,test,testKernelCollection"`
 	Struct2 *testKernelInjectStruct2 `dlinject:"testKernelInjectStruct2"`
 }
 
@@ -34,6 +35,7 @@ func (self *testKernelInjectStruct2) call() { self.methodCalled = true }
 func TestKernelInject(t *testing.T) {
 
 	kernel, err := StartKernel("kernelInject", testConfigFileName, func(kernel *Kernel) {
+		kernel.AddComponentWithStartStopMethods("MongoTestDb", NewMongoFromConfigPath("MongoConfigDb", "mongoDb.testDb"), "Start", "Stop")
 		kernel.AddComponent("testKernelInjectStruct1", &testKernelInjectStruct1{})
 		kernel.AddComponent("testKernelInjectStruct2", &testKernelInjectStruct2{})
 	})
@@ -56,7 +58,9 @@ func TestKernelInject(t *testing.T) {
 
 	if val := struct1.Configuration.String("environment", ""); len(val) == 0 { t.Errorf("TestKernelInject is broken - configuration is not working"); }
 
-	if err := kernel.Stop(); err != nil { t.Errorf("TestKernelInject stop kernel is broken:", err) }
+	// Verify the db connection
+	if err := struct1.InsertSafe(&bson.M{ "_id": struct1.NewObjectId()}); err != nil { t.Errorf("TestKernelInject is broken - ds inject not working"); }
 
+	if err := kernel.Stop(); err != nil { t.Errorf("TestKernelInject stop kernel is broken:", err) }
 }
 
