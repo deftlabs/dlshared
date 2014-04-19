@@ -20,6 +20,7 @@ import (
 	"os"
 	"fmt"
 	"time"
+	"strings"
 	"reflect"
 	"strconv"
 	"syscall"
@@ -29,6 +30,7 @@ import (
 
 const (
 	nadaStr = "" // This is internal to dlshared.
+	commaStr = "," // This is internal to dlshared.
 
 	injectLoggerName = "dlshared.Logger"
 	injectLoggerFieldName = "Logger"
@@ -36,6 +38,7 @@ const (
 	injectConfigurationName = "*dlshared.Configuration"
 	injectConfigurationFieldName = "Configuration"
 
+	injectMongoDataSourceName = "dlshared.MongoDataSource"
 )
 
 type Kernel struct {
@@ -165,6 +168,7 @@ func (self *Kernel) Start() error {
 }
 
 func (self *Kernel) injectComponents() error {
+
 	// Loop through the components, look at the variables for tags and automatically do the injection
 	// if the tag is set on a field.
 	for componentId, component := range self.Components {
@@ -179,6 +183,9 @@ func (self *Kernel) injectComponents() error {
 
 			structField := componentType.Field(i)
 			fieldValue := componentValue.Field(i)
+
+			var mongoDbName string
+			var mongoCollectionName string
 
 			// Check to see if the tag is set.
 			injectComponentId := structField.Tag.Get("dlinject")
@@ -197,6 +204,20 @@ func (self *Kernel) injectComponents() error {
 				continue
 			}
 
+			if structField.Type.String() == injectMongoDataSourceName {
+				dataSourceConfig := strings.Split(injectComponentId, commaStr)
+
+				if len(dataSourceConfig) != 3 {
+					return NewStackError(	"Unable to inject component: %s - into component: %s - reason: config must be componentId,dbName,collectionName",
+											injectComponentId,
+											componentId)
+				}
+
+				injectComponentId = dataSourceConfig[0]
+				mongoDbName = dataSourceConfig[1]
+				mongoCollectionName = dataSourceConfig[2]
+			}
+
 			// Make sure the component is present.
 			injectComponent, found := self.Components[injectComponentId]
 			if !found {
@@ -213,8 +234,15 @@ func (self *Kernel) injectComponents() error {
 										structField.Name)
 			}
 
-			// Inject the pointer.
-			fieldValue.Set(reflect.ValueOf(injectComponent.singleton))
+			// Check to see if this is a mongo data source component
+			if structField.Type.String() == injectMongoDataSourceName {
+				fieldValue.Set(reflect.ValueOf(MongoDataSource{	DbName: mongoDbName,
+																CollectionName: mongoCollectionName,
+																Mongo: injectComponent.singleton.(*Mongo),
+																Logger: self.Logger,
+				}))
+
+			} else { fieldValue.Set(reflect.ValueOf(injectComponent.singleton)) }
 		}
 	}
 
