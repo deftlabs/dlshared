@@ -213,9 +213,9 @@ func (self *Kernel) injectComponents() error {
 											componentId)
 				}
 
-				injectComponentId = dataSourceConfig[0]
-				mongoDbName = dataSourceConfig[1]
-				mongoCollectionName = dataSourceConfig[2]
+				injectComponentId = strings.TrimSpace(dataSourceConfig[0])
+				mongoDbName = strings.TrimSpace(dataSourceConfig[1])
+				mongoCollectionName = strings.TrimSpace(dataSourceConfig[2])
 			}
 
 			// Make sure the component is present.
