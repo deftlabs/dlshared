@@ -38,6 +38,9 @@ const (
 	injectConfigurationName = "*dlshared.Configuration"
 	injectConfigurationFieldName = "Configuration"
 
+	injectKernelName = "*dlshared.Kernel"
+	injectKernelFieldName = "Kernel"
+
 	injectMongoDataSourceName = "dlshared.MongoDataSource"
 )
 
@@ -198,6 +201,11 @@ func (self *Kernel) injectComponents() error {
 
 				if structField.Type.String() == injectConfigurationName && structField.Name == injectConfigurationFieldName {
 					fieldValue.Set(reflect.ValueOf(self.Configuration))
+					continue
+				}
+
+				if structField.Type.String() == injectKernelName && structField.Name == injectKernelFieldName {
+					fieldValue.Set(reflect.ValueOf(self))
 					continue
 				}
 
