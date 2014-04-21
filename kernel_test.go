@@ -25,6 +25,7 @@ import (
 type testKernelInjectStruct1 struct {
 	Logger
 	Configuration *Configuration
+	Kernel *Kernel
 	MongoDataSource `dlinject:"MongoTestDb,test,testKernelCollection"`
 	Struct2 *testKernelInjectStruct2 `dlinject:"testKernelInjectStruct2"`
 }
@@ -47,6 +48,9 @@ func TestKernelInject(t *testing.T) {
 	if struct1.Struct2 == nil { t.Errorf("TestKernelInject is broken - component not injected"); return }
 
 	struct1.Struct2.call()
+
+	if struct1.Kernel == nil { t.Errorf("TestKernelInject is broken - did not inject the kernel component"); return }
+	if struct1.Kernel.Configuration == nil { t.Errorf("TestKernelInject is broken - did not inject the kernel component"); return }
 
 	if !struct1.Struct2.methodCalled { t.Errorf("TestKernelInject is broken - method not called on struct"); return }
 
