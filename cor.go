@@ -16,10 +16,7 @@
 
 package dlshared
 
-import (
-	//"fmt"
-	"sync"
-)
+import "sync"
 
 type CoRFunction func(ctx *CoRContext) error
 
@@ -109,10 +106,7 @@ func (self *cor) run(ctx *CoRContext) error {
 		}()
 
 		if err != nil { return err }
-
-		if panicError != nil {
-			return NewStackError("CoR panic - chain: %s - index: %d - err: %v", self.chainId, idx, panicError)
-		}
+		if panicError != nil { return NewStackError("CoR panic - chain: %s - index: %d - err: %v", self.chainId, idx, panicError) }
 	}
 	return nil
 }
