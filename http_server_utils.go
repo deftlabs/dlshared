@@ -119,6 +119,12 @@ func (self *HttpContext) ParamFloat(name string) float64 { return self.Params[na
 
 func (self *HttpContext) ParamString(name string) string { return self.Params[name].String() }
 
+func (self *HttpContext) HasParam(name string) bool {
+	val, found := self.Params[name]
+	if (!found || val == nil) { return false }
+	return true
+}
+
 func (self *HttpContext) ParamBool(name string) bool { return self.Params[name].Bool() }
 
 func (self *HttpContext) ParamObjectId(name string) *bson.ObjectId { return self.Params[name].ObjectId() }
