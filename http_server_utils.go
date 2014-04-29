@@ -120,10 +120,7 @@ func (self *HttpContext) ParamFloat(name string) float64 { return self.Params[na
 func (self *HttpContext) ParamString(name string) string { return self.Params[name].String() }
 
 func (self *HttpContext) HasParam(name string) bool {
-	if val, found := self.Params[name]; !found || val == nil || val.Value == nil { 
-		fmt.Println("---------- value: %v - raw: %v", val, val.Value)
-		return false
-	}
+	if val, found := self.Params[name]; !found || val == nil || val.Value == nil { return false }
 	return true
 }
 
