@@ -131,10 +131,7 @@ func (self *Consumer) listenForMsgs() {
 func (self *Consumer) Start() error {
 
 	// Create the goroutine pool
-	for idx := 0; idx < self.maxGoroutines; idx++ {
-		self.waitGroup.Add(1)
-		go self.msgProcessor()
-	}
+	for idx := 0; idx < self.maxGoroutines; idx++ { self.waitGroup.Add(1); go self.msgProcessor() }
 
 	// Create the message listener
 	self.waitGroup.Add(1)
