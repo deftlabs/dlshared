@@ -65,7 +65,7 @@ func (self *MaxMindLocationSvc) LocationByIp(ipAddress string) *GeoLocation { re
 func (self *MaxMindLocationSvc) Start() error {
 	var err error
 	self.geoIp, err = libgeo.Load(self.dbFile)
-	if err != nil { return err }
+	if err != nil { return NewStackError("Unable to init the libgeo library - err: %v", err) }
 
 	return nil
 }
