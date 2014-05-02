@@ -24,9 +24,18 @@ import (
 	"labix.org/v2/mgo/bson"
 )
 
-type structPointerTest struct {
-	name string
+func TestDivisionEquals(t *testing.T) {
+
+	value := 10
+	value /= 1
+	if value != 10 { t.Errorf("TestDivisionEquals is broken - value off") }
+
+	value = 20
+	value /= 2
+	if value != 10 { t.Errorf("TestDivisionEquals is broken - value off") }
 }
+
+type structPointerTest struct { name string }
 
 func TestClosures(t *testing.T) {
 
@@ -106,7 +115,6 @@ func TestObjectId(t *testing.T) {
 	id1 = bson.ObjectIdHex("532b19b784a8f7f139f3e338")
 	id2 = bson.ObjectIdHex("532b19b884a8f7f139f3e339")
 
-
 	if id1 == id2 { t.Errorf("TestStructs is broken - match") }
 
 	p1 = &id1
@@ -121,13 +129,9 @@ func TestErrors(t *testing.T) {
 
 	err := errors.New("test")
 
-	if nil == err {
-		t.Errorf("TestErrors is broken - nil == error")
-	}
+	if nil == err { t.Errorf("TestErrors is broken - nil == error") }
 
-	if err != err {
-		t.Errorf("TestErrors is broken - error == error")
-	}
+	if err != err { t.Errorf("TestErrors is broken - error == error") }
 }
 
 // Confirm the way slices behave.
@@ -135,27 +139,19 @@ func TestSlices(t *testing.T) {
 
 	var slice []byte
 
-	if slice != nil {
-		t.Errorf("TestSlice is broken - slice is not nil")
-	}
+	if slice != nil { t.Errorf("TestSlice is broken - slice is not nil") }
 
-	if len(slice) != 0 {
-		t.Errorf("TestSlice is broken - slice length is not zero")
-	}
+	if len(slice) != 0 { t.Errorf("TestSlice is broken - slice length is not zero") }
 }
 
 // Confirm the way data types behave.
 func TestDataTypes(t *testing.T) {
 
 	val := fmt.Sprintf("%t", true)
-	if val != "true" {
-		t.Errorf("TestDataTypes is broken - true != true")
-	}
+	if val != "true" { t.Errorf("TestDataTypes is broken - true != true") }
 
 	val = fmt.Sprintf("%t", false)
-	if val != "false" {
-		t.Errorf("TestDataTypes is broken - false != false")
-	}
+	if val != "false" { t.Errorf("TestDataTypes is broken - false != false") }
 }
 
 // Confirm the way range behaves.
@@ -181,26 +177,21 @@ func TestMaps(t *testing.T) {
 	mapTest["two"] = "two"
 	mapTest["three"] = "three"
 
-	if _, found := mapTest["four"]; found {
-		t.Errorf("TestMaps is broken - something found that does not exist")
-	}
+	if _, found := mapTest["four"]; found { t.Errorf("TestMaps is broken - something found that does not exist") }
 
-	if _, found := mapTest["one"]; !found {
-		t.Errorf("TestMaps is broken - something not found that should be found")
-	}
+	if _, found := mapTest["one"]; !found { t.Errorf("TestMaps is broken - something not found that should be found") }
 
 	// A missing key, should not panic.
 	emptyStr := mapTest["four"]
 
-	if len(emptyStr) != 0 {
-		t.Errorf("TestMaps is broken - the empty value has something")
-	}
+	if len(emptyStr) != 0 { t.Errorf("TestMaps is broken - the empty value has something") }
 
 	var testMap map[string]string
 
 	// Make sure a var map is nil
-	if testMap != nil {
-		t.Errorf("TestMaps is broken - uninitiated map should be nil")
-	}
+	if testMap != nil { t.Errorf("TestMaps is broken - uninitiated map should be nil") }
+
+	// This should not panic.
+	for _, v := range testMap { if v == "" { } }
 }
 
