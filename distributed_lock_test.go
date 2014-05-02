@@ -27,7 +27,7 @@ func TestDistributedLock(t *testing.T) {
 
 	kernel, err := baseTestStartKernel("distributedLockTest", func(kernel *Kernel) {})
 
-	if err != nil { t.Errorf("TestDistributedLock start kernel is broken:", err); return }
+	if err != nil { t.Errorf("TestDistributedLock start kernel is broken: %v", err); return }
 
 	lock := kernel.GetComponent("DistributedLock").(DistributedLock)
 
@@ -59,7 +59,7 @@ func TestDistributedLock(t *testing.T) {
 
 	lock.Unlock()
 
-	if err := kernel.Stop(); err != nil { t.Errorf("TestDistributedLock stop kernel is broken:", err) }
+	if err := kernel.Stop(); err != nil { t.Errorf("TestDistributedLock stop kernel is broken: %v", err) }
 }
 
 func testLockUnlock(lock DistributedLock) {

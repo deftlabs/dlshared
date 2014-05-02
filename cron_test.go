@@ -82,6 +82,6 @@ func TestCron(t *testing.T) {
 	if !testComponent.interruptReceived { t.Errorf("TestCron Interrupt(chan) was not interrupted") }
 	testComponent.lock.Unlock()
 
-	if err := kernel.Stop(); err != nil { t.Errorf("TestCron stop kernel is broken:", err) }
+	if err := kernel.Stop(); err != nil { t.Errorf("TestCron stop kernel is broken: %v", err) }
 }
 

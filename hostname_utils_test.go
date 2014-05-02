@@ -22,7 +22,7 @@ import (
 
 func TestAssembleHostnameAndPort(t *testing.T) {
 	if val := AssembleHostnameAndPort("someservername", int16(8080)); val != "someservername:8080" {
-		t.Errorf("AssembleHostnameAndPort is broken - expected: someservername:27017 - received %v", val)
+		t.Errorf("AssembleHostnameAndPort is broken - expected: someservername:27017 - received: %v", val)
 	}
 }
 

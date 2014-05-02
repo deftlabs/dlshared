@@ -22,23 +22,15 @@ func TestCreateDeleteDir(t *testing.T) {
 
 	dirName := "/tmp/systemunittest/one"
 
-	if err := DeleteDir(dirName); err != nil {
-		t.Errorf("DeleteDir is broken: %v", err)
-	}
+	if err := DeleteDir(dirName); err != nil { t.Errorf("DeleteDir is broken: %v", err) }
 
-	if err := CreateDir(dirName); err != nil {
-		t.Errorf("CreateDir is broken: %v", err)
-	}
+	if err := CreateDir(dirName); err != nil { t.Errorf("CreateDir is broken: %v", err) }
 
-	if err := DeleteDir(dirName); err != nil {
-		t.Errorf("DeleteDir is broken: %v", err)
-	}
+	if err := DeleteDir(dirName); err != nil { t.Errorf("DeleteDir is broken: %v", err) }
 }
 
 func TestFileOrDirExists(t *testing.T) {
-	if exists, err := FileOrDirExists("/tmp"); err != nil || !exists {
-		t.Errorf("FileOrDirExists is broken: %v", err)
-	}
+	if exists, err := FileOrDirExists("/tmp"); err != nil || !exists { t.Errorf("FileOrDirExists is broken: %v", err) }
 
 	if exists, err := FileOrDirExists("/tmpsdksjdfkajdfksajfdkf8888"); err != nil || exists {
 		t.Errorf("FileOrDirExists is broken: %v")

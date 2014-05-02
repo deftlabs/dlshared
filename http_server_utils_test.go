@@ -30,13 +30,9 @@ func TestNewHttpContextBasic(t *testing.T) {
 
 	ctx := NewHttpContext(response, request)
 
-	if !ctx.ParamsAreValid() {
-		t.Errorf("TestNewHttpContextBasic is broken - empty params are not valid")
-	}
+	if !ctx.ParamsAreValid() { t.Errorf("TestNewHttpContextBasic is broken - empty params are not valid") }
 
-	if len(ctx.ErrorCodes) != 0 {
-		t.Errorf("TestNewHttpContextBasic is broken - there are error codes")
-	}
+	if len(ctx.ErrorCodes) != 0 { t.Errorf("TestNewHttpContextBasic is broken - there are error codes") }
 }
 
 func TestNewHttpContextJsonPostParams(t *testing.T) {

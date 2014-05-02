@@ -35,17 +35,11 @@ func TestConsumer1(t *testing.T) {
 							0,
 							Logger{})
 
-	if err := consumer.Start(); err != nil {
-		t.Errorf("TestConsumer1 Start is broken: %v", err)
-	}
+	if err := consumer.Start(); err != nil { t.Errorf("TestConsumer1 Start is broken: %v", err) }
 
-	for idx := 0; idx < 10000; idx++ {
-		receiveChannel <- "test"
-	}
+	for idx := 0; idx < 10000; idx++ { receiveChannel <- "test" }
 
-	if err := consumer.Stop(); err != nil {
-		t.Errorf("TestConsumer1 Stop is broken: %v", err)
-	}
+	if err := consumer.Stop(); err != nil { t.Errorf("TestConsumer1 Stop is broken: %v", err) }
 }
 
 func TestConsumer2(t *testing.T) {
@@ -63,17 +57,11 @@ func TestConsumer2(t *testing.T) {
 							0,
 							Logger{})
 
-	if err := consumer.Start(); err != nil {
-		t.Errorf("TestConsumer2 Start is broken: %v", err)
-	}
+	if err := consumer.Start(); err != nil { t.Errorf("TestConsumer2 Start is broken: %v", err) }
 
-	for idx := 0; idx < 10000; idx++ {
-		receiveChannel <- "test"
-	}
+	for idx := 0; idx < 10000; idx++ { receiveChannel <- "test" }
 
-	if err := consumer.Stop(); err != nil {
-		t.Errorf("TestConsumer2 Stop is broken: %v", err)
-	}
+	if err := consumer.Stop(); err != nil { t.Errorf("TestConsumer2 Stop is broken: %v", err) }
 }
 
 
