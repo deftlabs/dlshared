@@ -17,6 +17,7 @@
 package dlshared
 
 import (
+	"fmt"
 	"net/url"
 	"net/http"
 	"io/ioutil"
@@ -52,8 +53,6 @@ type HttpRequestClient interface {
 	PostBson(url string, bsonDoc interface{}, headers map[string]string) (int, []byte, error)
 	GetBson(url string, headers map[string]string) (int, bson.M, error)
 	Clone() HttpRequestClient
-	GetClientAndTransport() (*http.Client, *httpclient.Transport)
-	GetTransport() *httpclient.Transport
 }
 
 type HttpRequestClientImpl struct {
@@ -94,7 +93,7 @@ func NewHttpRequestClient(	disableKeepAlives,
 // Post the values to the url.
 func (self *HttpRequestClientImpl) Post(url string, values url.Values, headers map[string]string) (int, []byte, error) {
 
-	client, transport := self.GetClientAndTransport()
+	client, transport := self.getClientAndTransport()
 	defer transport.Close()
 
 	request, err := http.NewRequest(HttpPostMethod, url,  strings.NewReader(values.Encode()))
@@ -117,7 +116,7 @@ func (self *HttpRequestClientImpl) Post(url string, values url.Values, headers m
 // Post the raw string to the url.
 func (self *HttpRequestClientImpl) PostStr(url string, value string, headers map[string]string) (int, []byte, error) {
 
-	client, transport := self.GetClientAndTransport()
+	client, transport := self.getClientAndTransport()
 	defer transport.Close()
 
 	request, err := http.NewRequest(HttpPostMethod, url, bytes.NewReader([]byte(value)))
@@ -143,7 +142,7 @@ func (self *HttpRequestClientImpl) PostJson(url string, value interface{}, heade
 	rawJson, err := json.Marshal(value)
 	if err != nil { return NoStatusCode, nil, err }
 
-	client, transport := self.GetClientAndTransport()
+	client, transport := self.getClientAndTransport()
 	defer transport.Close()
 
 	request, err := http.NewRequest(HttpPostMethod, url, bytes.NewReader(rawJson))
@@ -169,7 +168,7 @@ func (self *HttpRequestClientImpl) PostBson(url string, bsonDoc interface{}, hea
 	rawBson, err := bson.Marshal(bsonDoc)
 	if err != nil { return NoStatusCode, nil, err }
 
-	client, transport := self.GetClientAndTransport()
+	client, transport := self.getClientAndTransport()
 	defer transport.Close()
 
 	request, err := http.NewRequest(HttpPostMethod, url, bytes.NewReader(rawBson))
@@ -193,7 +192,7 @@ func (self *HttpRequestClientImpl) PostBson(url string, bsonDoc interface{}, hea
 // Issue a GET to retrieve a bson doc.
 func (self *HttpRequestClientImpl) GetBson(url string, headers map[string]string) (int, bson.M, error) {
 
-	client, transport := self.GetClientAndTransport()
+	client, transport := self.getClientAndTransport()
 	defer transport.Close()
 
 	request, requestErr := http.NewRequest(HttpGetMethod, url, nil)
@@ -218,17 +217,14 @@ func (self *HttpRequestClientImpl) GetBson(url string, headers map[string]string
 }
 
 // Use the clone method if you need to override some/all of the configured values.
-func (self *HttpRequestClientImpl) Clone() HttpRequestClient {
-	val := *self
-	return &val
-}
+func (self *HttpRequestClientImpl) Clone() HttpRequestClient { val := *self; return &val }
 
-func (self *HttpRequestClientImpl) GetClientAndTransport() (*http.Client, *httpclient.Transport) {
-	transport := self.GetTransport()
+func (self *HttpRequestClientImpl) getClientAndTransport() (*http.Client, *httpclient.Transport) {
+	transport := self.getTransport()
 	return &http.Client{ Transport: transport }, transport
 }
 
-func (self *HttpRequestClientImpl) GetTransport() *httpclient.Transport {
+func (self *HttpRequestClientImpl) getTransport() *httpclient.Transport {
 	return &httpclient.Transport {
 
 		DisableKeepAlives: self.disableKeepAlives,
@@ -254,4 +250,44 @@ func HttpPostJson(url string, value interface{}, headers map[string]string) (int
 func HttpPostBson(url string, bsonDoc interface{}, headers map[string]string) (int, []byte, error) { return NewDefaultHttpRequestClient().PostBson(url, bsonDoc, headers) }
 
 func HttpGetBson(url string, headers map[string]string) (int, bson.M, error) { return NewDefaultHttpRequestClient().GetBson(url, headers) }
+
+// The simple http request client mock object. This implements the HttpRequestClient interface. Set
+// the struct fields to your desired return values before calling the function and add them by url before
+// the method is called. The method will panic if no response is found for an url (i.e., you don't define the
+// response for an url by calling AddMock).
+type HttpRequestClientMock struct { mock map[string]*HttpRequestClientMockResponse }
+
+type HttpRequestClientMockResponse struct {
+	Data []byte
+	HttpStatusCode int
+	Error error
+}
+
+func (self *HttpRequestClientMock) AddMock(url string, response *HttpRequestClientMockResponse) { self.mock[url] = response }
+
+func (self *HttpRequestClientMock) findResponse(url string) (int, []byte, error) {
+	response, found := self.mock[url]
+	if !found { panic(fmt.Sprintf("HttpRequestClientMock - no mock response for url: %s", url)) }
+	return response.HttpStatusCode, response.Data, response.Error
+}
+
+func (self *HttpRequestClientMock) Post(url string, values url.Values, headers map[string]string) (int, []byte, error) { return self.findResponse(url) }
+
+func (self *HttpRequestClientMock) PostStr(url string, value string, headers map[string]string) (int, []byte, error) { return self.findResponse(url) }
+
+func (self *HttpRequestClientMock) PostJson(url string, value interface{}, headers map[string]string) (int, []byte, error) { return self.findResponse(url) }
+
+func (self *HttpRequestClientMock) PostBson(url string, bsonDoc interface{}, headers map[string]string) (int, []byte, error) { return self.findResponse(url) }
+
+func (self *HttpRequestClientMock) GetBson(url string, headers map[string]string) (int, bson.M, error) {
+	statusCode, data, err := self.findResponse(url)
+	if err != nil { return statusCode, nil, err }
+
+	var bsonDoc bson.M
+	if err := bson.Unmarshal(data, &bsonDoc); err != nil { return statusCode, nil, err }
+
+	return statusCode, bsonDoc, nil
+}
+
+func (self *HttpRequestClientMock) Clone() HttpRequestClient { val := *self;  return &val }
 
