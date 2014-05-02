@@ -32,9 +32,9 @@
 		"initialGoogleCloudMsgBackoffInMs": 100,
 		"maxGoogleCloudMsgBackoffInMs": 10000,
 		"consumer": {
-			"maxGoroutines": 1000,
-			"channelBufferSize": 1000,
-			"maxWaitOnStopInMs": 30000
+			"maxGoroutines": 1,
+			"channelBufferSize": 1,
+			"maxWaitOnStopInMs": 1000
 		}
 	},
 
