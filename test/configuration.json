@@ -25,6 +25,19 @@
 		}
 	},
 
+	"gcm": {
+		"postUrl": "https://android.googleapis.com/gcm/send",
+		"authKey": "WHATEVER_IT_IS_FOR_YOUR_API_ACCESS",
+		"acceptableGoogleCloudMsgFailurePercent": 10,
+		"initialGoogleCloudMsgBackoffInMs": 100,
+		"maxGoogleCloudMsgBackoffInMs": 10000,
+		"consumer": {
+			"maxGoroutines": 1000,
+			"channelBufferSize": 1000,
+			"maxWaitOnStopInMs": 30000
+		}
+	},
+
 	"cron": {
 		"scheduled": {
 			"mongoComponentId": "MongoTestDb",
