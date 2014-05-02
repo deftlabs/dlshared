@@ -30,6 +30,27 @@ type testJsonStruct struct {
 	Number float64
 }
 
+func TestHttpRequestClientMock(t *testing.T) {
+	httpClient := NewHttpRequestClientMock()
+	httpClient.(*HttpRequestClientMock).AddMock("/test", &HttpRequestClientMockResponse{ HttpStatusCode: 200 })
+
+	var data []byte
+	var statusCode int
+	var err error
+
+	statusCode, data, err = httpClient.Post("/test", nil, nil)
+	if statusCode != 200 { t.Errorf("TestHttpRequestClientMock is broken - expecting status code: 200 - recieved %d", statusCode) }
+	if data != nil { t.Errorf("TestHttpRequestClientMock is broken - expecting nil data") }
+	if err != nil { t.Errorf("TestHttpRequestClientMock is broken - expecting nil error") }
+
+	httpClient.(*HttpRequestClientMock).AddMock("/test", &HttpRequestClientMockResponse{ Data: []byte("this is a test"), HttpStatusCode: 200 })
+	statusCode, data, err = httpClient.Post("/test", nil, nil)
+
+	if data == nil { t.Errorf("TestHttpRequestClientMock is broken - expecting some data"); return }
+	if string(data) != "this is a test" { t.Errorf("TestHttpRequestClientMock is broken - expecting the data to be equal") }
+
+}
+
 func TestHttpRequestClientClone(t *testing.T) {
 	client := NewDefaultHttpRequestClient()
 
