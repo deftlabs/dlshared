@@ -254,8 +254,10 @@ func HttpGetBson(url string, headers map[string]string) (int, bson.M, error) { r
 // The simple http request client mock object. This implements the HttpRequestClient interface. Set
 // the struct fields to your desired return values before calling the function and add them by url before
 // the method is called. The method will panic if no response is found for an url (i.e., you don't define the
-// response for an url by calling AddMock).
+// response for an url by calling AddMock). For usage, see TestHttpRequestClientMock in http_client_test.go
 type HttpRequestClientMock struct { mock map[string]*HttpRequestClientMockResponse }
+
+func NewHttpRequestClientMock() HttpRequestClient { return &HttpRequestClientMock{ mock: make(map[string]*HttpRequestClientMockResponse) } }
 
 type HttpRequestClientMockResponse struct {
 	Data []byte
