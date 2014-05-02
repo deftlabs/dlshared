@@ -21,11 +21,12 @@ import (
 	"bytes"
 	"testing"
 	"net/http"
+	"net/http/httptest"
 )
 
 func TestNewHttpContextBasic(t *testing.T) {
 
-	response := NewRecordingResponseWriter()
+	response := httptest.NewRecorder()
 	request := &http.Request{ Method: "GET" }
 
 	ctx := NewHttpContext(response, request)
@@ -36,7 +37,8 @@ func TestNewHttpContextBasic(t *testing.T) {
 }
 
 func TestNewHttpContextJsonPostParams(t *testing.T) {
-	response := NewRecordingResponseWriter()
+	response := httptest.NewRecorder()
+
 	request, err := http.NewRequest(
 		"POST",
 		"/foo",
@@ -55,8 +57,8 @@ func TestNewHttpContextJsonPostParams(t *testing.T) {
 }
 
 func TestNewHttpContextPostParams(t *testing.T) {
+	response := httptest.NewRecorder()
 
-	response := NewRecordingResponseWriter()
 	request, err := http.NewRequest(
 		"POST",
 		"/foo",
@@ -83,7 +85,7 @@ func TestNewHttpContextPostParams(t *testing.T) {
 
 func TestNewHttpContextQueryParams(t *testing.T) {
 
-	response := NewRecordingResponseWriter()
+	response := httptest.NewRecorder()
 	request, err := http.NewRequest("GET", "/foo?testInt0=100&testBool0=true&testBoo1=&testFloat0=99.9999999999&testString0=hello%21&testObjectId0=52e29b18eee7d580e9bb1544", nil)
 	if err != nil {
 		t.Errorf("TestNewHttpContextQueryParams is broken - NewRequest failed")
@@ -98,7 +100,7 @@ func TestNewHttpContextQueryParams(t *testing.T) {
 
 func TestNewHttpContextHeaderParams(t *testing.T) {
 
-	response := NewRecordingResponseWriter()
+	response := httptest.NewRecorder()
 	request := &http.Request{ Method: "GET", Header: make(map[string][]string) }
 
 	// Add some values to the headers.

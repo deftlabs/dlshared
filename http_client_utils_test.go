@@ -21,6 +21,7 @@ import (
 	"testing"
 	"net/http"
 	"encoding/json"
+	"net/http/httptest"
 )
 
 type testJsonStruct struct {
@@ -47,7 +48,7 @@ func TestHttpRequestClientClone(t *testing.T) {
 
 func TestJsonEncodeAndWriteResponse(t *testing.T) {
 
-	response := NewRecordingResponseWriter()
+	response := httptest.NewRecorder()
 
 	test := &testJsonStruct{ String: "test", Boolean: true, Number: math.MaxFloat64 }
 
@@ -58,7 +59,7 @@ func TestJsonEncodeAndWriteResponse(t *testing.T) {
 
 	// Ensure the response
 	decoded := &testJsonStruct{}
-	if err := json.Unmarshal(response.Data, decoded); err != nil {
+	if err := json.Unmarshal(response.Body.Bytes(), decoded); err != nil {
 		t.Errorf("JsonEncodeAndWriteResponse unmarshal data is broken - %v", err)
 	}
 
@@ -78,42 +79,31 @@ func TestJsonEncodeAndWriteResponse(t *testing.T) {
 
 func TestWriteOkResponseString(t *testing.T) {
 
-	response := NewRecordingResponseWriter()
+	response := httptest.NewRecorder()
 
-	if err := WriteOkResponseString(response, "test"); err != nil {
-		t.Errorf("IsHttpMethodPost is broken - %v", err)
-	}
+	if err := WriteOkResponseString(response, "test"); err != nil { t.Errorf("IsHttpMethodPost is broken - %v", err) }
 
-	if string(response.Data) != "test" {
-		t.Errorf("IsHttpMethodPost is broken")
-	}
+	if string(response.Body.Bytes()) != "test" { t.Errorf("IsHttpMethodPost is broken") }
 
 	if response.Header().Get("Content-Type") != "text/plain; charset=utf-8" {
 		t.Errorf("IsHttpMethodPost Content-Type is broken")
 	}
 
-	response.reset()
+	response = httptest.NewRecorder()
 
-	if response.Header().Get("Content-Type") != "" {
-		t.Errorf("IsHttpMethodPost reset is broken")
-	}
+	if response.Header().Get("Content-Type") != "" { t.Errorf("IsHttpMethodPost reset is broken") }
 
 	err := WriteOkResponseString(response, "")
-	if err == nil {
-		t.Errorf("WriteOkResponseString is broken - no error on empty message")
-	}
+	if err == nil { t.Errorf("WriteOkResponseString is broken - no error on empty message") }
 
 	//writeOkResponseStringEmptyMsgPanic(response, t)
 
-	if err := WriteOkResponseString(response, "t"); err != nil {
-		t.Errorf("IsHttpMethodPost is broken - %v", err)
-	}
+	if err := WriteOkResponseString(response, "t"); err != nil { t.Errorf("IsHttpMethodPost is broken - %v", err) }
 
-	if string(response.Data) != "t" {
-		t.Errorf("IsHttpMethodPost is broken")
-	}
+	if string(response.Body.Bytes()) != "t" { t.Errorf("IsHttpMethodPost is broken") }
 
-	response.reset()
+	response = httptest.NewRecorder()
+
 	if err := WriteOkResponseString(response, "tttttttttttttttttttttttttttttttttttttttttttttttt"); err != nil {
 		t.Errorf("IsHttpMethodPost is broken - %v", err)
 	}
