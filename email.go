@@ -54,11 +54,11 @@ type AwsEmailDs struct {
 	Logger
 	accessKeyId string
 	secretAccessKey string
-	httpClient *HttpRequestClient
+	httpClient HttpRequestClient
 }
 
 // Create a new aws email ds.
-func NewAwsEmailDs(awsAccessKeyId, awsSecretKey string, httpClient  *HttpRequestClient, logger Logger) *AwsEmailDs {
+func NewAwsEmailDs(awsAccessKeyId, awsSecretKey string, httpClient HttpRequestClient, logger Logger) *AwsEmailDs {
 	return &AwsEmailDs{ accessKeyId: awsAccessKeyId, secretAccessKey: awsSecretKey, httpClient: httpClient, Logger: logger }
 }
 
