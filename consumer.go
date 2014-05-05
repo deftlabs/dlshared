@@ -32,7 +32,7 @@ import (
 // consume function panics, the consumer will lose a goroutine each time, so don't panic!
 type Consumer struct {
 
-	logger Logger
+	Logger
 
 	name string
 
@@ -57,35 +57,52 @@ type Consumer struct {
 
 // Create the consumer. You must call this method to create a consumer. If you set the maxGoroutines
 // to zero (or less) then it will spawn a new goroutine for each request and there is no limit. If maxGoroutines
-// is set, these goroutines are created and added to a pool when Start is called. If you set channelBufferSize to something
-// greater than zero then a buffered channel is created. The maxWaitOnStopMs is the amount of time the Stop
-// method will wait for the goroutines to finish clearing out the processor channel. If the processor channel unbuffered,
-// this does not apply. A maxWaitOnStopMs value of zero indicates an unlimited wait.
+// is set, these goroutines are created and added to a pool when Start is called. The maxWaitOnStopInMs is the amount of time the Stop
+// method will wait for the goroutines to finish clearing out what they are processing. A maxWaitOnStopInMs value of zero
+// indicates an unlimited wait. It is the callers responsibility to handle messages placed in the receiveChannel that
+// have not been consumed (if required).
 func NewConsumer(	name string,
 					receiveChannel chan interface{},
 					consumeFunc func(msg interface{}),
 					spilloverFunc func(msg interface{}),
-					maxGoroutines, channelBufferSize, maxWaitOnStopInMs int,
+					maxGoroutines,
+					maxWaitOnStopInMs int,
 					logger Logger) *Consumer {
 
-	if channelBufferSize < 0 { channelBufferSize = 0 }
-
 	if maxWaitOnStopInMs < 0 { maxWaitOnStopInMs = 0 }
-
 	if maxGoroutines <= 0 { maxGoroutines = 1 }
 
 	consumer := &Consumer{
-		logger: logger,
+		Logger: logger,
 		name: name,
-		consumeFunc: consumeFunc,
-		spilloverFunc: spilloverFunc,
 		receiveChannel: receiveChannel,
-		processorChannel: make(chan interface{}, channelBufferSize),
+		processorChannel: make(chan interface{}),
 		quitChannel: make(chan bool),
 		processedChannel: make(chan bool, maxGoroutines),
 		maxGoroutines: maxGoroutines,
 		maxWaitOnStopInMs: int64(maxWaitOnStopInMs),
 		waitGroup: new(sync.WaitGroup),
+	}
+
+	consumer.consumeFunc = func(msg interface{}) {
+		defer func() {
+			if r := recover(); r != nil {
+				consumer.Logf(Warn, "Consume func in consumer: %s - panicked - err: %v", consumer.name, r)
+			}
+			consumer.processedChannel <- true
+		}()
+		consumeFunc(msg)
+	}
+
+	if spilloverFunc != nil {
+		consumer.spilloverFunc = func(msg interface{}) {
+			defer func() {
+				if r := recover(); r != nil {
+					consumer.Logf(Warn, "Consume spillover func in consumer: %s - panicked - err: %v", consumer.name, r)
+				}
+			}()
+			spilloverFunc(msg)
+		}
 	}
 
 	return consumer
@@ -96,10 +113,7 @@ func NewConsumer(	name string,
 // function should never panic. Don't Panic!
 func (self *Consumer) msgProcessor() {
 	defer self.waitGroup.Done()
-	for msg := range self.processorChannel {
-		self.consumeFunc(msg)
-		self.processedChannel <- true
-	}
+	for msg := range self.processorChannel { self.consumeFunc(msg) }
 }
 
 func (self *Consumer) listenForMsgs() {
@@ -116,7 +130,7 @@ func (self *Consumer) listenForMsgs() {
 
 				} else {
 					if self.spilloverFunc == nil {
-						self.logger.Logf(Warn, "Max concurrent messages (%d) reached in consumer: %s - dropping data (no spillover func set)", self.maxGoroutines, self.name)
+						self.Logf(Warn, "Max concurrent messages (%d) reached in consumer: %s - dropping data (no spillover func set)", self.maxGoroutines, self.name)
 					} else {
 						// If this blocks, it will further compound problems with the consumer
 						self.spilloverFunc(msg)
@@ -147,35 +161,32 @@ func (self *Consumer) Stop() error {
 	// Exit the listen for events select
 	self.quitChannel <- true
 
-	// If this is an unbuffered channel, close, wait for the goroutines
-	// to exit and then get out of here.
-	if cap(self.processorChannel) == 0 {
-		close(self.processorChannel)
+	// Close the channel. The goroutines will exit cleanly when they are not
+	// processing a msg and the channel is closed.
+	close(self.processorChannel)
+
+	// If the max wait on stop in ms equals zero, we will wait indefinitely before
+	// stopping.
+	if self.maxWaitOnStopInMs == 0 {
 		self.waitGroup.Wait()
-		return nil
-	}
 
-	// This is a buffered channel so we need to wait until the channel
-	// is emptied (if configured to do so).
-	if self.maxWaitOnStopInMs > 0 {
-		start := CurrentTimeInMillis()
+	} else {
+		stopNotification := make(chan bool, 1)
+		var stopWaitGroup sync.WaitGroup
+		stopWaitGroup.Add(1)
 
-		for {
-			if len(self.processorChannel) == 0 {
-				break
-			}
+		go func() {
+			defer func() { stopWaitGroup.Done() }()
+			self.waitGroup.Wait()
+			stopNotification <- true
+		}()
 
-		 	if CurrentTimeInMillis() - start >= self.maxWaitOnStopInMs {
-				break
-			}
-
-			time.Sleep(10 * time.Millisecond)
+		select {
+			case <-stopNotification: // This is a clean shutdown, do nothing.
+			case <-time.After(time.Duration(self.maxWaitOnStopInMs) * time.Millisecond):
+				self.Logf(Warn, "Cunsumer : %s - unabled to shutdown cleanly - stopping", self.name)
 		}
 	}
-
-	// Close the processor channel and wait for all of the goroutines to return
-	close(self.processorChannel)
-	self.waitGroup.Wait()
 
 	return nil
 }
