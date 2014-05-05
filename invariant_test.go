@@ -24,6 +24,41 @@ import (
 	"labix.org/v2/mgo/bson"
 )
 
+type testPanicStruct struct {
+	called0 int
+	called1 int
+}
+
+func (self *testPanicStruct) call0() {
+	defer func() { self.called0++ }()
+	defer func() {
+		if r := recover(); r != nil { }
+		self.called0++
+	}()
+	panic("This is a panic: 0")
+}
+
+func (self *testPanicStruct) call1() {
+	defer func() { self.called0++ }()
+	panic("This is a panic: 1")
+}
+
+func TestPanic(t *testing.T) {
+
+	test := &testPanicStruct{}
+
+	test.call0()
+
+	if test.called0 != 2 { t.Errorf("TestPanic is broken - called0 should be 2 but, is %d", test.called0) }
+
+	defer func() {
+		recover()
+		if test.called1 != 0 { t.Errorf("TestPanic is broken - called1 should be zero but, is %d", test.called1) }
+	}()
+
+	test.call1()
+}
+
 func TestDivisionEquals(t *testing.T) {
 
 	value := 10
