@@ -27,9 +27,6 @@ func TestConsumer1(t *testing.T) {
 	consumer := NewConsumer("TestConsumer1",
 							receiveChannel,
 							func(msg interface{}) { },
-							func(msg interface{}) {
-								t.Errorf("TestConsumer1 is broken - spillover called")
-							},
 							10,
 							0,
 							Logger{})
@@ -39,6 +36,8 @@ func TestConsumer1(t *testing.T) {
 
 	for idx := 0; idx < 10000; idx++ { receiveChannel <- "test" }
 
+
+	close(receiveChannel)
 	if err := consumer.Stop(); err != nil { t.Errorf("TestConsumer1 Stop is broken: %v", err) }
 }
 
@@ -49,9 +48,6 @@ func TestConsumer2(t *testing.T) {
 	consumer := NewConsumer("TestConsumer2",
 							receiveChannel,
 							func(msg interface{}) { },
-							func(msg interface{}) {
-								t.Errorf("TestConsumer2 is broken - spillover called")
-							},
 							10,
 							0,
 							Logger{})
@@ -60,6 +56,7 @@ func TestConsumer2(t *testing.T) {
 
 	for idx := 0; idx < 10000; idx++ { receiveChannel <- "test" }
 
+	close(receiveChannel)
 	if err := consumer.Stop(); err != nil { t.Errorf("TestConsumer2 Stop is broken: %v", err) }
 }
 
