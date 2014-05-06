@@ -32,8 +32,8 @@ func TestConsumer1(t *testing.T) {
 							},
 							10,
 							0,
-							0,
 							Logger{})
+
 
 	if err := consumer.Start(); err != nil { t.Errorf("TestConsumer1 Start is broken: %v", err) }
 
@@ -53,7 +53,6 @@ func TestConsumer2(t *testing.T) {
 								t.Errorf("TestConsumer2 is broken - spillover called")
 							},
 							10,
-							100,
 							0,
 							Logger{})
 
@@ -63,5 +62,4 @@ func TestConsumer2(t *testing.T) {
 
 	if err := consumer.Stop(); err != nil { t.Errorf("TestConsumer2 Stop is broken: %v", err) }
 }
-
 
