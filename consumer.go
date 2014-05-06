@@ -104,7 +104,6 @@ func (self *Consumer) Stop() error {
 	if self.maxWaitOnStopInMs == 0 {
 		self.waitGroup.Wait()
 	} else {
-
 		stopNotification := make(chan bool, 1)
 		var stopWaitGroup sync.WaitGroup
 		stopWaitGroup.Add(1)
