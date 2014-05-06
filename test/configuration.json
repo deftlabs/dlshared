@@ -31,6 +31,7 @@
 		"acceptableGoogleCloudMsgFailurePercent": 10,
 		"initialGoogleCloudMsgBackoffInMs": 100,
 		"maxGoogleCloudMsgBackoffInMs": 10000,
+		"msgChannelSendTimeoutInMs": 2000,
 		"consumer": {
 			"maxGoroutines": 2,
 			"maxWaitOnStopInMs": 1000
