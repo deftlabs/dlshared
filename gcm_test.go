@@ -48,7 +48,7 @@ func TestGcm(t *testing.T) {
 
 	if err != nil { t.Errorf("TestGcm start kernel is broken: %v", err); return }
 
-	msgSendCount := 100000
+	msgSendCount := 10000
 	msgReceivedCount := 0
 
 	var waitGroup sync.WaitGroup
