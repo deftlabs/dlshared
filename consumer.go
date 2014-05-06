@@ -23,30 +23,18 @@ import (
 
 // The consumer is a generic component that is meant to be embedded into your applications. It
 // allows you to create a specific number of goroutines to handle the realtime data/msg processing.
-// It also has optional support for spillover processing if the goroutines cannot keep pace with
-// the incoming events. If your spillover method blocks (i.e., cannot keep pace), it will cause further
-// issues with incoming message processing. If you do not provide a spillover method, data will be dropped
-// and a log statement will be generated for each discarded message.
-// The contact is that you must call the NewConsumer method to create the struct.
-// After that, you must call the Start/Stop methods before attempting to pass in a msg. If the passed
-// consume function panics, the consumer will lose a goroutine each time, so don't panic!
+// The contact is that you must call the NewConsumer method to create the struct. After that, you
+// must call the Start method before attempting to pass in a msg. To stop the consumer, close the
+// receive channel and THEN call the Stop method.
 type Consumer struct {
 
 	Logger
 
 	name string
 
-	quitChannel chan bool
-
 	consumeFunc func(msg interface{})
 
-	spilloverFunc func(msg interface{})
-
-	processorChannel chan interface{}
-
 	receiveChannel chan interface{}
-
-	processedChannel chan bool
 
 	maxGoroutines int
 
@@ -59,12 +47,10 @@ type Consumer struct {
 // to zero (or less) then it will spawn a new goroutine for each request and there is no limit. If maxGoroutines
 // is set, these goroutines are created and added to a pool when Start is called. The maxWaitOnStopInMs is the amount of time the Stop
 // method will wait for the goroutines to finish clearing out what they are processing. A maxWaitOnStopInMs value of zero
-// indicates an unlimited wait. It is the callers responsibility to handle messages placed in the receiveChannel that
-// have not been consumed (if required).
+// indicates an unlimited wait. You MUST close the receive channel before calling stop.
 func NewConsumer(	name string,
 					receiveChannel chan interface{},
 					consumeFunc func(msg interface{}),
-					spilloverFunc func(msg interface{}),
 					maxGoroutines,
 					maxWaitOnStopInMs int,
 					logger Logger) *Consumer {
@@ -76,9 +62,6 @@ func NewConsumer(	name string,
 		Logger: logger,
 		name: name,
 		receiveChannel: receiveChannel,
-		processorChannel: make(chan interface{}),
-		quitChannel: make(chan bool),
-		processedChannel: make(chan bool, maxGoroutines),
 		maxGoroutines: maxGoroutines,
 		maxWaitOnStopInMs: int64(maxWaitOnStopInMs),
 		waitGroup: new(sync.WaitGroup),
@@ -89,67 +72,25 @@ func NewConsumer(	name string,
 			if r := recover(); r != nil {
 				consumer.Logf(Warn, "Consume func in consumer: %s - panicked - err: %v", consumer.name, r)
 			}
-			consumer.processedChannel <- true
 		}()
 		consumeFunc(msg)
-	}
-
-	if spilloverFunc != nil {
-		consumer.spilloverFunc = func(msg interface{}) {
-			defer func() {
-				if r := recover(); r != nil {
-					consumer.Logf(Warn, "Consume spillover func in consumer: %s - panicked - err: %v", consumer.name, r)
-				}
-			}()
-			spilloverFunc(msg)
-		}
 	}
 
 	return consumer
 }
 
-// This method listens to the processor channel and then
+// This method listens to the receive channel and then
 // calls the consume function passed. The passed consume
 // function should never panic. Don't Panic!
 func (self *Consumer) msgProcessor() {
 	defer self.waitGroup.Done()
-	for msg := range self.processorChannel { self.consumeFunc(msg) }
-}
-
-func (self *Consumer) listenForMsgs() {
-	defer self.waitGroup.Done()
-	msgsBeingProcessed := 0
-
-    for {
-        select {
-			case msg := <- self.receiveChannel:
-				if msgsBeingProcessed <= self.maxGoroutines {
-
-					self.processorChannel <- msg
-					msgsBeingProcessed++
-
-				} else {
-					if self.spilloverFunc == nil {
-						self.Logf(Warn, "Max concurrent messages (%d) reached in consumer: %s - dropping data (no spillover func set)", self.maxGoroutines, self.name)
-					} else {
-						// If this blocks, it will further compound problems with the consumer
-						self.spilloverFunc(msg)
-					}
-				}
-			case <- self.processedChannel: msgsBeingProcessed--
-			case <- self.quitChannel: return
-        }
-    }
+	for msg := range self.receiveChannel { self.consumeFunc(msg) }
 }
 
 func (self *Consumer) Start() error {
 
 	// Create the goroutine pool
 	for idx := 0; idx < self.maxGoroutines; idx++ { self.waitGroup.Add(1); go self.msgProcessor() }
-
-	// Create the message listener
-	self.waitGroup.Add(1)
-	go self.listenForMsgs()
 
 	return nil
 }
@@ -158,19 +99,10 @@ func (self *Consumer) Start() error {
 // caller to clear the receiveChannel.
 func (self *Consumer) Stop() error {
 
-	// Exit the listen for events select
-	self.quitChannel <- true
-
-	// Close the channel. The goroutines will exit cleanly when they are not
-	// processing a msg and the channel is closed.
-	close(self.processorChannel)
-
 	// If the max wait on stop in ms equals zero, we will wait indefinitely before
 	// stopping.
 	if self.maxWaitOnStopInMs == 0 {
-
 		self.waitGroup.Wait()
-
 	} else {
 
 		stopNotification := make(chan bool, 1)
