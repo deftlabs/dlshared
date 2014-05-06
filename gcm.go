@@ -19,6 +19,7 @@ package dlshared
 import(
 	"fmt"
 	"time"
+	"sync"
 	"strings"
 	"encoding/json"
 )
@@ -36,41 +37,31 @@ import(
 //			"maxGoogleCloudMsgBackoffInMs": 10000,
 //			"consumer": {
 //				"maxGoroutines": 1000,
-//				"channelBufferSize": 1000,
 //				"maxWaitOnStopInMs": 30000
 //          }
 //		}
 //
 // In the example above, the configuration path would be "gcm" (passed in New function). This assumes
-// that "gcm" is located as child of the root of the document. Messages are processed asynchronously,
-// so there is no response sent to the caller. If the consumer message queue is full,
-// passing new messages will result in dropped messages with an error message in the logs.
-//
-// If you wish to wish to take action based on response from Google you may register a response handler.
-// You must register the response handler before you start sending messages. You usually want to handle
-// the responses to deal with canonical ids and unregistered devices. Response handlers are called in the order
-// they were added.
+// that "gcm" is located as child of the root of the document.
 //
 type GoogleCloudMessagingSvc struct {
 	Logger
 	consumer *Consumer
 	configPath string
+
+	consumerChannel chan interface{}
 	requestChannel chan interface{}
-	msgChannel chan *GoogleCloudMsg
+	responseChannel chan interface{}
+
 	authKey string
 	postUrl string
-	shutdownChannel chan bool
-	successChannel chan int
-	failureChannel chan int
-	msgRequestChannel chan bool
-	msgResponseChannel chan int
-	backoffCheckTicker *time.Ticker
 
-	acceptableGcmFailurePercent int
-	initialGcmBackoffInMs int
-	maxGcmBackoffInMs int
+	updateStatsTicker *time.Ticker
 
 	httpClient HttpRequestClient
+
+	stats *GoogleCloudMsgSendStats
+	sync.WaitGroup
 
 	responseHandlers []GoogleCloudMessagingMsgResponseHandler
 }
@@ -96,15 +87,14 @@ type GoogleCloudMsg struct {
 
 // The response object returned by google.
 type GoogleCloudMsgResponse struct {
-	MulticastId []string `json:"multicast_id"`
+	MulticastId float64 `json:"multicast_id"`
 	Success float64 `json:"success"`
 	Failure float64 `json:"failure"`
 	CanonicalIds float64 `json:"canonical_ids"`
 	Results []*GoogleCloudMsgResponseResult `json:"results"`
 	OrigMsg *GoogleCloudMsg `json:"-"`
-	LocalErr error `json:"-"` // If there is an error (usually io) returned by send POST operation
+	Err error `json:"-"` // If there is an error (usually io) returned by send POST operation
 	HttpStatusCode int `json:"-"`
-	ConsumerOverwhelmed bool `json:"-"`
 }
 
 type GoogleCloudMsgResponseResult struct {
@@ -113,34 +103,32 @@ type GoogleCloudMsgResponseResult struct {
 	Error string `json:"error"`
 }
 
-func NewGoogleCloudMessagingSvc(configPath string, httpClient HttpRequestClient) *GoogleCloudMessagingSvc {
+func NewGoogleCloudMessagingSvc(configPath string, httpClient HttpRequestClient, requestChannel, responseChannel chan interface{}) *GoogleCloudMessagingSvc {
 	return &GoogleCloudMessagingSvc{	configPath: configPath,
-										requestChannel: make(chan interface{}),
-										shutdownChannel: make(chan bool),
-										msgChannel: make(chan *GoogleCloudMsg),
-										successChannel: make(chan int),
-										failureChannel: make(chan int),
-										msgRequestChannel: make(chan bool),
-										msgResponseChannel: make(chan int),
-										backoffCheckTicker: time.NewTicker(1 * time.Second),
+										requestChannel: requestChannel,
+										responseChannel: responseChannel,
+										consumerChannel: make(chan interface{}),
+										updateStatsTicker: time.NewTicker(1 * time.Second),
 										httpClient: httpClient,
 										responseHandlers: make([]GoogleCloudMessagingMsgResponseHandler, 0),
-
+										stats: &GoogleCloudMsgSendStats{},
 	}
 }
 
-// Called by the user of the service to start the send process. There is no guarantee this
-// message will be sent. The best way to implement this is to set a time of send and then
-// when the device updates, set the last update time. This call can block if there are problems
-// sending data to google. Google requires exponential backoff in calls, so if there are errors
-// sending to google, this method will temporarily blocks.
-func (self *GoogleCloudMessagingSvc) Send(msg *GoogleCloudMsg) {
-	self.msgRequestChannel <- true
-	if backoff := <- self.msgResponseChannel; backoff > 0 { time.Sleep(time.Duration(backoff) * time.Millisecond) }
-	self.msgChannel <- msg
+func (self *GoogleCloudMessagingSvc) sendResponse(response *GoogleCloudMsgResponse, msgCount int, err error) {
+	self.Add(1)
+	defer self.Done()
+
+	if err != nil {
+		self.stats.updateFailureCount(msgCount)
+		response.Err = err
+	} else {
+		self.stats.updateSuccessCount(msgCount)
+	}
+
+	self.responseChannel <- response
 }
 
-func (self *GoogleCloudMessagingSvc) callResponseHandlers(response *GoogleCloudMsgResponse) { for _, handler := range self.responseHandlers { handler(response) } }
 
 // This is the internal method called by the consumer to actually send the message.
 func (self *GoogleCloudMessagingSvc) processMsg(msg interface{}) {
@@ -159,92 +147,50 @@ func (self *GoogleCloudMessagingSvc) processMsg(msg interface{}) {
 	err = self.httpClient.PostJson(self.postUrl, gcmMsg, map[string]string { gcmAuthHeader:  fmt.Sprintf(gcmAuthHeaderKeyPrefix, self.authKey) })
 
 	if err != nil {
-		self.Logf(Warn, "Problem with gcm post - err: %v", err)
-		self.failureChannel <- msgCount
-		response.LocalErr = err
-		self.callResponseHandlers(&response)
-		return
-	}
 
-	if response.HttpStatusCode >= 500 {
-		self.Logf(Warn, "Problem with gcm post - http status error code: %d", response.HttpStatusCode)
-		self.failureChannel <- msgCount
-		self.callResponseHandlers(&response)
-		return
-	}
+		self.sendResponse(&response, msgCount, NewStackError("Problem with gcm post - err: %v", err))
 
-	if response.HttpStatusCode == 400 {
-		self.Logf(Error, "Problem with gcm post - http status: 400 - problem with JSON sent")
-		self.failureChannel <- msgCount
-		self.callResponseHandlers(&response)
-		return
-	}
+	} else if response.HttpStatusCode >= 500 {
 
-	if response.HttpStatusCode == 401 {
-		self.Logf(Error, "Problem with gcm post - http status: 401 - unable to authenticate - check your auth key")
-		self.failureChannel <- msgCount
-		self.callResponseHandlers(&response)
-		return
-	}
+		self.sendResponse(&response, msgCount, NewStackError("Problem with gcm servers - http status error code: %d", response.HttpStatusCode))
 
-	if response.HttpStatusCode != 200 {
-		self.Logf(Warn, "Problem with gcm post - http status: %d", response.HttpStatusCode)
-		self.failureChannel <- msgCount
-		self.callResponseHandlers(&response)
-		return
-	}
+	} else if response.HttpStatusCode == 400 {
 
-	err = json.Unmarshal(result, &response)
+		self.sendResponse(&response, msgCount, NewStackError("Problem with gcm post - http status: 400 - problem with JSON sent"))
 
-	if err != nil {
-		self.Logf(Warn, "Unable to handle gcm response - err: %v", err)
-		self.failureChannel <- msgCount
-		response.LocalErr = err
-		self.callResponseHandlers(&response)
-		return
-	}
+	} else if response.HttpStatusCode == 401 {
 
-	self.successChannel <- msgCount
-	self.callResponseHandlers(&response)
-}
+		self.sendResponse(&response, msgCount, NewStackError("Problem with gcm post - http status: 401 - unable to authenticate - check your auth key"))
 
-func (self *GoogleCloudMessagingSvc) AddResponseHandler(handler GoogleCloudMessagingMsgResponseHandler) {
-	self.responseHandlers = append(self.responseHandlers, func(response *GoogleCloudMsgResponse) {
-		defer func() {
-			if r := recover(); r != nil {
-				self.Logf(Error, "Panic in a google cloud message response handler - name: %s - err: %v", GetFunctionName(handler), r)
-			}
-		}()
+	} else if response.HttpStatusCode != 200 {
 
-		handler(response)
-	})
-}
+		self.sendResponse(&response, msgCount, NewStackError("Problem with gcm post - http status: %d", response.HttpStatusCode))
 
-func (self *GoogleCloudMessagingSvc) listenForEvents() {
-	stats := &GoogleCloudMsgSendStats{
-		acceptableGcmFailurePercent: self.acceptableGcmFailurePercent,
-		initialGcmBackoffInMs: self.initialGcmBackoffInMs,
-		maxGcmBackoffInMs: self.maxGcmBackoffInMs,
-	}
+	} else {
 
-	var successCount int
-	var failureCount int
+		if err = json.Unmarshal(result, &response); err != nil {
 
-	for {
-		select {
-			case msg := <- self.msgChannel: self.requestChannel <- msg
-			case <- self.msgRequestChannel: self.msgResponseChannel <- stats.BackoffTimeInMs
-			case successCount = <- self.successChannel: stats.CurrentSuccessCount += successCount
-			case failureCount = <- self.failureChannel: stats.CurrentFailureCount += failureCount
-			case <- self.backoffCheckTicker.C: stats.update()
-			case <- self.shutdownChannel: return
+			self.sendResponse(&response, msgCount, NewStackError("Unable to parse gcm response - err: %v", err))
+
+		} else {
+
+			self.sendResponse(&response, msgCount, nil)
+
 		}
 	}
 }
 
-func (self *GoogleCloudMessagingSvc) spilloverHandler(msg interface{}) {
-	self.callResponseHandlers(&GoogleCloudMsgResponse{ OrigMsg: msg.(*GoogleCloudMsg), ConsumerOverwhelmed: true })
+func (self *GoogleCloudMessagingSvc) listenForRequests() {
+	self.Add(1)
+	defer self.Done()
+	for msg := range self.requestChannel {
+		backoff := self.stats.backoffTime()
+		if backoff > 0 { time.Sleep(time.Duration(backoff) * time.Millisecond) }
+		self.consumerChannel <- msg
+	}
 }
+
+func (self *GoogleCloudMessagingSvc) updateStats() { for now := range self.updateStatsTicker.C { self.stats.update(&now) } }
 
 func (self *GoogleCloudMessagingSvc) Start(kernel *Kernel) error {
 
@@ -253,28 +199,34 @@ func (self *GoogleCloudMessagingSvc) Start(kernel *Kernel) error {
 
 	if len(self.authKey) == 0 { return NewStackError("Unable to create GoogleCloudMessagingSvc - no \"authKey\" field in config file - path: %s", self.configPath) }
 
-	self.acceptableGcmFailurePercent = kernel.Configuration.IntWithPath(self.configPath, "acceptableGoogleCloudMsgFailurePercent", 10)
-	self.initialGcmBackoffInMs = kernel.Configuration.IntWithPath(self.configPath, "initialGoogleCloudMsgBackoffInMs", 100)
-	self.maxGcmBackoffInMs = kernel.Configuration.IntWithPath(self.configPath, "maxGoogleCloudMsgBackoffInMs", 10000)
+	self.stats.acceptableGcmFailurePercent = kernel.Configuration.IntWithPath(self.configPath, "acceptableGoogleCloudMsgFailurePercent", 10)
+	self.stats.initialGcmBackoffInMs = kernel.Configuration.IntWithPath(self.configPath, "initialGoogleCloudMsgBackoffInMs", 100)
+	self.stats.maxGcmBackoffInMs = kernel.Configuration.IntWithPath(self.configPath, "maxGoogleCloudMsgBackoffInMs", 10000)
 
 	self.consumer = NewConsumer("GoogleCloudMessagingSvcConsumer",
-								self.requestChannel,
+								self.consumerChannel,
 								self.processMsg,
-								self.spilloverHandler,
 								kernel.Configuration.IntWithPath(self.configPath, "consumer.maxGoroutines", 1000),
-								kernel.Configuration.IntWithPath(self.configPath, "consumer.channelBufferSize", 1000),
 								kernel.Configuration.IntWithPath(self.configPath, "consumer.maxWaitOnStopInMs", 30000),
 								kernel.Logger)
 
+
 	if err := self.consumer.Start(); err != nil { return err }
-	go self.listenForEvents()
+
+	go self.updateStats()
+
+	go self.listenForRequests()
 
 	return nil
 }
 
 func (self *GoogleCloudMessagingSvc) Stop(kernel *Kernel) error {
-	self.shutdownChannel <- true
+
+	close(self.consumerChannel)
 	if self.consumer != nil { if err := self.consumer.Stop(); err != nil { return err } }
+
+	self.Wait()
+
 	return nil
 }
 
@@ -289,12 +241,14 @@ type GoogleCloudMsgSendStats struct {
 	acceptableGcmFailurePercent int
 	initialGcmBackoffInMs int
 	maxGcmBackoffInMs int
+	sync.Mutex
 }
 
-func (self *GoogleCloudMsgSendStats) update() {
+func (self *GoogleCloudMsgSendStats) update(now *time.Time) {
+	self.Lock()
+	defer self.Unlock()
 
-	if self.currentFailurePercent() <= self.acceptableGcmFailurePercent { self.reduceBackoff()
-	} else { self.increaseBackoff() }
+	if self.currentFailurePercent() <= self.acceptableGcmFailurePercent { self.reduceBackoff() } else { self.increaseBackoff() }
 
 	// Update the current and previous values.
 	self.updateCurrent()
@@ -305,10 +259,6 @@ func (self *GoogleCloudMsgSendStats) updateCurrent() {
 	self.PreviousFailureCount = self.CurrentFailureCount
 	self.CurrentSuccessCount = 0
 	self.CurrentFailureCount = 0
-}
-
-func (self *GoogleCloudMsgSendStats) clearBackoff() {
-	self.BackoffTimeInMs = 0
 }
 
 func (self *GoogleCloudMsgSendStats) reduceBackoff() {
@@ -326,5 +276,23 @@ func (self *GoogleCloudMsgSendStats) increaseBackoff() {
 func (self *GoogleCloudMsgSendStats) currentFailurePercent() int {
 	totalMsgs := self.CurrentSuccessCount + self.CurrentFailureCount
 	if totalMsgs == 0 { return 0 } else { return (self.CurrentFailureCount / totalMsgs) * 100 }
+}
+
+func (self *GoogleCloudMsgSendStats) backoffTime() int {
+	self.Lock()
+	defer self.Unlock()
+	return self.BackoffTimeInMs
+}
+
+func (self *GoogleCloudMsgSendStats) updateFailureCount(count int) {
+	self.Lock()
+	defer self.Unlock()
+	self.CurrentFailureCount += count
+}
+
+func (self *GoogleCloudMsgSendStats) updateSuccessCount(count int) {
+	self.Lock()
+	defer self.Unlock()
+	self.CurrentSuccessCount += count
 }
 
