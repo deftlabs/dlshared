@@ -18,15 +18,46 @@ package dlshared
 
 import (
 	"fmt"
+	"time"
 	"errors"
 	"testing"
 	"labix.org/v2/mgo"
 	"labix.org/v2/mgo/bson"
 )
 
+func TestChannels(t *testing.T) {
+	test := &testPanicStruct{}
+	channel := make(chan bool)
+	close(channel)
+	test.call2(channel)
+	if test.called0 != 1 { t.Errorf("TestChannels is broken - called0 should be 1 but, is %d", test.called0) }
+
+	test.called0 = 0
+
+	channel1 := make(chan bool)
+
+	go test.call3(channel1)
+
+	close(channel1)
+
+	time.Sleep(400*time.Millisecond)
+
+	if test.called0 != 0 { t.Errorf("TestChannels is broken - called0 should be 0 but, is %d", test.called0) }
+}
+
 type testPanicStruct struct {
 	called0 int
 	called1 int
+}
+
+func (self *testPanicStruct) call3(channel chan bool) {
+	defer func() { if r := recover(); r != nil { self.called0++ } }()
+	for v := range channel { if v { } }
+}
+
+func (self *testPanicStruct) call2(channel chan bool) {
+	defer func() { if r := recover(); r != nil { self.called0++ } }()
+	channel <- true
 }
 
 func (self *testPanicStruct) call0() {
