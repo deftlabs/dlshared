@@ -168,9 +168,11 @@ func (self *Consumer) Stop() error {
 	// If the max wait on stop in ms equals zero, we will wait indefinitely before
 	// stopping.
 	if self.maxWaitOnStopInMs == 0 {
+
 		self.waitGroup.Wait()
 
 	} else {
+
 		stopNotification := make(chan bool, 1)
 		var stopWaitGroup sync.WaitGroup
 		stopWaitGroup.Add(1)
@@ -182,8 +184,8 @@ func (self *Consumer) Stop() error {
 		}()
 
 		select {
-			case <-stopNotification: // This is a clean shutdown, do nothing.
-			case <-time.After(time.Duration(self.maxWaitOnStopInMs) * time.Millisecond):
+			case <- stopNotification: // This is a clean shutdown, do nothing.
+			case <- time.After(time.Duration(self.maxWaitOnStopInMs) * time.Millisecond):
 				self.Logf(Warn, "Cunsumer : %s - unabled to shutdown cleanly - stopping", self.name)
 		}
 	}
