@@ -17,6 +17,8 @@
 package dlshared
 
 import (
+	"fmt"
+	"sync"
 	"time"
 	"net/http"
 	"github.com/gorilla/mux"
@@ -76,11 +78,20 @@ func (self *HttpServer) Start(kernel *Kernel) error {
 		MaxHeaderBytes: 1 << 20,
 	}
 
+	var startWaitGroup sync.WaitGroup
+	startWaitGroup.Add(1)
+
 	go func() {
+		startWaitGroup.Done()
 		if err := self.server.ListenAndServe(); err != nil {
-			self.Logf(Error, "Error in listen and serve call - server unpredictable: %v", err)
+			panic(fmt.Sprintf("Error in listen and serve call - server unpredictable: %v", err))
 		}
 	}()
+
+	// Wait for the goroutine to be allocated before moving on. This is a hack that does
+	// no really solve the problem. Ideally, listen and serve would have a notification/callback
+	// of some sort so that we know the server is initialized and running.
+	startWaitGroup.Wait()
 
 	return nil
 }
