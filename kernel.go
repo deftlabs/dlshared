@@ -20,6 +20,7 @@ import (
 	"os"
 	"fmt"
 	"time"
+	"flag"
 	"strings"
 	"reflect"
 	"strconv"
@@ -335,6 +336,27 @@ func writePidFile(kernel *Kernel) error {
 	if _, err := pidFile.Write([]byte(strconv.Itoa(kernel.Pid))); err != nil {
 		return NewStackError("Unable to start kernel - problem writing pid file %s - error: %v", kernel.Configuration.PidFile, err)
 	}
+
+	return nil
+}
+
+// This method will load the configuration file, start the kernel and then
+// listen for the interrupt.
+func RunKernelAndListenForInterrupt(id string, addComponentsFunction func(kernel *Kernel)) error {
+
+	var configFileName string
+
+	flag.StringVar(&configFileName, "config", "configuration.json", "You must pass in a configuration file")
+	flag.Parse()
+
+	var kernel *Kernel
+	var err error
+
+	if kernel, err = StartKernel(id, configFileName, addComponentsFunction); err != nil {
+		return NewStackError("Error starting: %s - exiting - err: %v", id, err)
+	}
+
+	if err := kernel.ListenForInterrupt(); err != nil { return NewStackError("Error stopping %s - err: %v", id, err) }
 
 	return nil
 }
