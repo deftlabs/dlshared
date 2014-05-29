@@ -214,7 +214,6 @@ func (self *GoogleCloudMessagingSvc) Start(kernel *Kernel) error {
 								kernel.Configuration.IntWithPath(self.configPath, "consumer.maxWaitOnStopInMs", 30000),
 								kernel.Logger)
 
-
 	if err := self.consumer.Start(); err != nil { return err }
 
 	go self.updateStats()
@@ -227,6 +226,7 @@ func (self *GoogleCloudMessagingSvc) Start(kernel *Kernel) error {
 func (self *GoogleCloudMessagingSvc) Stop(kernel *Kernel) error {
 
 	close(self.consumerChannel)
+
 	if self.consumer != nil { if err := self.consumer.Stop(); err != nil { return err } }
 
 	self.Wait()
