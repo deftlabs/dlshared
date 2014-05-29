@@ -86,9 +86,9 @@ func TestGcm(t *testing.T) {
 func testCreateGoogleCloudMsgResponse(multicastId, success, failure, canonicalIds float64) *GoogleCloudMsgResponse {
 	return &GoogleCloudMsgResponse {
 		MulticastId: multicastId,
-		Success: success,
-		Failure: failure,
-		CanonicalIds: canonicalIds,
+		SuccessCount: success,
+		FailureCount: failure,
+		CanonicalIdsCount: canonicalIds,
 	}
 }
 
