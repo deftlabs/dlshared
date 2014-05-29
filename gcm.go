@@ -91,9 +91,9 @@ type GoogleCloudMsg struct {
 // The response object returned by google.
 type GoogleCloudMsgResponse struct {
 	MulticastId float64 `json:"multicast_id"`
-	Success float64 `json:"success"`
-	Failure float64 `json:"failure"`
-	CanonicalIds float64 `json:"canonical_ids"`
+	SuccessCount float64 `json:"success"`
+	FailureCount float64 `json:"failure"`
+	CanonicalIdsCount float64 `json:"canonical_ids"`
 	Results []*GoogleCloudMsgResponseResult `json:"results"`
 	OrigMsg *GoogleCloudMsg `json:"-"`
 	Err error `json:"-"` // If there is an error caused by io or a problem with gcm.
