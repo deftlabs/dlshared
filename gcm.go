@@ -83,6 +83,10 @@ type GoogleCloudMsg struct {
 	RestrictedPackageName string `json:"restricted_package_name,omitempty"`
 	DryRun bool `json:"dry_run,omitempty"`
 	Data map[string]interface{} `json:"data,omitempty"`
+
+	// This can contain anything - usually, it is source info/data that can be used
+	// when the response is processed.
+	AdditionalInfo map[string]interface{} `json:"-"`
 }
 
 // The response object returned by google.
