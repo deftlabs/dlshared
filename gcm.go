@@ -63,7 +63,6 @@ type GoogleCloudMessagingSvc struct {
 	stats *GoogleCloudMsgSendStats
 	sync.WaitGroup
 
-	responseHandlers []GoogleCloudMessagingMsgResponseHandler
 }
 
 type GoogleCloudMessagingMsgResponseHandler func(*GoogleCloudMsgResponse)
@@ -114,7 +113,6 @@ func NewGoogleCloudMessagingSvc(configPath string, httpClient HttpRequestClient,
 										consumerChannel: make(chan interface{}),
 										updateStatsTicker: time.NewTicker(1 * time.Second),
 										httpClient: httpClient,
-										responseHandlers: make([]GoogleCloudMessagingMsgResponseHandler, 0),
 										stats: &GoogleCloudMsgSendStats{},
 	}
 }
