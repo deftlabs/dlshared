@@ -84,8 +84,9 @@ type GoogleCloudMsg struct {
 	Data map[string]interface{} `json:"data,omitempty"`
 
 	// This can contain anything - usually, it is source info/data that can be used
-	// when the response is processed.
-	AdditionalInfo map[string]interface{} `json:"-"`
+	// when the response is processed. These items should be in the same order as
+	// the registration id.
+	AdditionalInfo []interface{} `json:"-"`
 }
 
 // The response object returned by google.
