@@ -97,7 +97,7 @@ type GoogleCloudMsgResponse struct {
 	CanonicalIds float64 `json:"canonical_ids"`
 	Results []*GoogleCloudMsgResponseResult `json:"results"`
 	OrigMsg *GoogleCloudMsg `json:"-"`
-	Err error `json:"-"` // If there is an error (usually io) returned by send POST operation
+	Err error `json:"-"` // If there is an error caused by io or a problem with gcm.
 	HttpStatusCode int `json:"-"`
 }
 
