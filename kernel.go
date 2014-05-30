@@ -154,7 +154,7 @@ func (self *Kernel) Start() error {
 
 	rand.Seed(time.Now().UTC().UnixNano())
 
-	self.Logf(Info, "Starting %s - version: %s - config file: %s", self.Id, self.Configuration.Version, self.Configuration.FileName)
+	self.Logf(Info, "Starting: %s - version: %s - config file: %s", self.Id, self.Configuration.Version, self.Configuration.FileName)
 
 	if err := self.injectComponents(); err != nil { return err }
 
@@ -166,7 +166,7 @@ func (self *Kernel) Start() error {
 		}
 	}
 
-	self.Logf(Info, "Started %s - version: %s - config file: %s ", self.Id, self.Configuration.Version, self.Configuration.FileName)
+	self.Logf(Info, "Started: %s - version: %s - config file: %s ", self.Id, self.Configuration.Version, self.Configuration.FileName)
 
 	return nil
 }
@@ -261,7 +261,7 @@ func (self *Kernel) injectComponents() error {
 // Stop the kernel. Call this before exiting.
 func (self *Kernel) Stop() error {
 
-	self.Logf(Info, "Stopping %s - version: %s - config file %s", self.Id, self.Configuration.Version, self.Configuration.FileName)
+	self.Logf(Info, "Stopping: %s - version: %s - config file %s", self.Id, self.Configuration.Version, self.Configuration.FileName)
 
 	for i := len(self.components)-1 ; i >= 0 ; i-- {
 
@@ -272,7 +272,7 @@ func (self *Kernel) Stop() error {
 		}
 	}
 
-	self.Logf(Info, "Stopped %s - version: %s - config file: %s", self.Id, self.Configuration.Version, self.Configuration.FileName)
+	self.Logf(Info, "Stopped: %s - version: %s - config file: %s", self.Id, self.Configuration.Version, self.Configuration.FileName)
 
 	return nil
 }
