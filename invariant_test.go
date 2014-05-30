@@ -18,6 +18,7 @@ package dlshared
 
 import (
 	"fmt"
+	"sync"
 	"time"
 	"errors"
 	"testing"
@@ -33,6 +34,40 @@ func TestTime(t *testing.T) {
 	var toCheck time.Time
 	if now.Before(toCheck) { t.Errorf("TestTime is broken - nothing is before Now") }
 	if !now.After(toCheck) { t.Errorf("TestTime is broken - nothing is after Now") }
+}
+
+func TestChannels1(t *testing.T) {
+
+	channel := make(chan bool, 1)
+
+	channel <- true
+
+	value, ok := <- channel
+
+	if !value { t.Errorf("TestChannels1 is broken - value should be true") }
+
+	if !ok { t.Errorf("TestChannels1 is broken - ok is false") }
+
+	var waitGroup sync.WaitGroup
+
+	// We are going to block here.
+	go func() {
+		waitGroup.Add(1)
+		value, ok = <- channel
+		if ok { t.Errorf("TestChannels1 is broken - ok should be false") }
+		waitGroup.Done()
+	}()
+
+	close(channel)
+
+	waitGroup.Wait()
+
+	structChannel := make(chan *bson.M, 1)
+	close(structChannel)
+	result := <- structChannel
+
+	if result != nil { t.Errorf("TestChannels1 is broken - result should be nil") }
+
 }
 
 func TestChannels(t *testing.T) {
