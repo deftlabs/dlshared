@@ -156,6 +156,7 @@ func (self *CronSvc) signalRunningCronJobsIfDistributedLockLost() {
 			if channel, found := self.interruptChannels[jobId]; found {
 				channel <- true
 				delete(self.interruptChannels, jobId)
+				close(channel)
 			}
 		}
 	}
@@ -200,6 +201,7 @@ func (self *CronSvc) signalAndRemoveAllInterruptChannels() {
 	for jobId, channel := range self.interruptChannels {
 		channel <- true
 		delete(self.interruptChannels, jobId)
+		close(channel)
 	}
 }
 
@@ -211,13 +213,18 @@ func (self *CronSvc) signalAndRemoveInterruptChannel(jobId string) {
 	if c, found := self.interruptChannels[jobId]; found {
 		c <- true
 		delete(self.interruptChannels, jobId)
+		close(c)
 	}
 }
 
 func (self *CronSvc) removeInterruptChannel(jobId string) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
-	delete(self.interruptChannels, jobId)
+
+	if c, found := self.interruptChannels[jobId]; found {
+		delete(self.interruptChannels, jobId)
+		close(c)
+	}
 }
 
 func (self *CronSvc) createAndAddInterruptChannel(jobId string) (chan bool) {
@@ -230,6 +237,7 @@ func (self *CronSvc) createAndAddInterruptChannel(jobId string) (chan bool) {
 		self.Logf(Warn, "Interrupting cron job that was still running at next execution time - jobId: %s - perhaps adjust maxRunTimeInSec", jobId)
 		c <- true
 		delete(self.interruptChannels, jobId)
+		close(c)
 	}
 
 	self.interruptChannels[jobId] = interruptChannel
