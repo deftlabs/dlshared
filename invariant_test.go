@@ -25,6 +25,16 @@ import (
 	"labix.org/v2/mgo/bson"
 )
 
+func TestTime(t *testing.T) {
+
+	now := time.Now()
+
+	// This should not panic or return true.
+	var toCheck time.Time
+	if now.Before(toCheck) { t.Errorf("TestTime is broken - nothing is before Now") }
+	if !now.After(toCheck) { t.Errorf("TestTime is broken - nothing is after Now") }
+}
+
 func TestChannels(t *testing.T) {
 	test := &testPanicStruct{}
 	channel := make(chan bool)
