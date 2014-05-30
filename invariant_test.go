@@ -60,6 +60,18 @@ func TestChannels1(t *testing.T) {
 
 	close(channel)
 
+	channel = make(chan bool, 1)
+
+	waitGroup.Wait()
+
+	// Make sure this exits as expected too.
+	go func() {
+		waitGroup.Add(1)
+		<- channel
+		waitGroup.Done()
+	}()
+
+	close(channel)
 	waitGroup.Wait()
 
 	structChannel := make(chan *bson.M, 1)
