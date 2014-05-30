@@ -358,10 +358,11 @@ func (self *CronSvc) initJobsFromConfig(kernel *Kernel) error {
 	if auditTimeoutInSec > 0 { if err := self.auditDs.EnsureTtlIndex("created", auditTimeoutInSec); err != nil { return err } }
 
 	// Add some indexes on the audit table.
-	if err := self.auditDs.EnsureIndex([]string{ "jobId", "created" }); err != nil { return err }
-	if err := self.auditDs.EnsureIndex([]string{ "jobId", "jobRunId", "created" }); err != nil { return err }
-	if err := self.auditDs.EnsureIndex([]string{ "jobRunId" }); err != nil { return err }
-	if err := self.auditDs.EnsureIndex([]string{ "created"  }); err != nil { return err }
+	if err := self.auditDs.EnsureIndex([]string{ "jobId", "startTime" }); err != nil { return err }
+	if err := self.auditDs.EnsureIndex([]string{ "jobId", "endTime" }); err != nil { return err }
+
+	if err := self.auditDs.EnsureIndex([]string{ "jobId", "_id", "startTime" }); err != nil { return err }
+	if err := self.auditDs.EnsureIndex([]string{ "startTime"  }); err != nil { return err }
 
 	scheduledInterface := kernel.Configuration.ListWithPath(self.configPath, "scheduledFunctions", nil)
 
@@ -524,17 +525,15 @@ func (self *cronAuditDs) start(def *cronJobDefinition, jobRunId *bson.ObjectId, 
 	}(def.Id)
 
 	if err := self.InsertSafe(&bson.M{
-		"_id": self.NewObjectId(),
+		"_id": jobRunId,
 		"jobId": def.Id,
-		"jobRunId": jobRunId,
 		"componentId": def.ComponentId,
 		"methodName": def.MethodName,
 		"schedule": def.Schedule,
 		"requiresDistributedLock": def.RequiresDistributedLock,
 		"audit": def.Audit,
 		"enabled": def.Enabled,
-		"created": now,
-		"start": true,
+		"startTime": now,
 	}); err != nil {
 		self.Logf(Error, "Unable to insert cron start audit - id: %s", def.Id)
 	}
@@ -548,20 +547,24 @@ func (self *cronAuditDs) end(def *cronJobDefinition, jobRunId *bson.ObjectId, no
 		}
 	}(def.Id)
 
-	if err := self.InsertSafe(&bson.M{
-		"_id": self.NewObjectId(),
-		"jobId": def.Id,
-		"jobRunId": jobRunId,
-		"componentId": def.ComponentId,
-		"methodName": def.MethodName,
-		"schedule": def.Schedule,
-		"requiresDistributedLock": def.RequiresDistributedLock,
-		"audit": def.Audit,
-		"enabled": def.Enabled,
-		"created": now,
-		"start": false,
-		"runTimeInMs": DurationToMillis(elapsedTime),
-	}); err != nil {
+	upsert := &bson.M{
+		"$set": &bson.M{
+			"runTimeInMs": DurationToMillis(elapsedTime),
+			"endTime": now,
+		},
+
+		"$setOnInsert": &bson.M{
+			"jobId": def.Id,
+			"componentId": def.ComponentId,
+			"methodName": def.MethodName,
+			"schedule": def.Schedule,
+			"requiresDistributedLock": def.RequiresDistributedLock,
+			"audit": def.Audit,
+			"enabled": def.Enabled,
+		},
+	}
+
+	if err := self.UpsertSafe(&bson.M{ "_id": jobRunId }, upsert); err != nil {
 		self.Logf(Error, "Unable to insert cron end audit - id: %s", def.Id)
 	}
 }
