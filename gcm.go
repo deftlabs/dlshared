@@ -145,6 +145,8 @@ func (self *GoogleCloudMessagingSvc) processMsg(msg interface{}) {
 	var result []byte
 	var err error
 
+	fmt.Println("-------- auth key:", fmt.Sprintf(gcmAuthHeaderKeyPrefix, self.authKey))
+
 	response.HttpStatusCode,
 	result,
 	err = self.httpClient.PostJson(self.postUrl, gcmMsg, map[string]string { gcmAuthHeader:  fmt.Sprintf(gcmAuthHeaderKeyPrefix, self.authKey) })
