@@ -69,7 +69,7 @@ type GoogleCloudMessagingMsgResponseHandler func(*GoogleCloudMsgResponse)
 
 const(
 	gcmAuthHeader = "Authorization"
-	gcmAuthHeaderKeyPrefix = "key="
+	gcmAuthHeaderKeyPattern= "key=%s"
 )
 
 // The user must set the required fields in the message.
@@ -145,11 +145,9 @@ func (self *GoogleCloudMessagingSvc) processMsg(msg interface{}) {
 	var result []byte
 	var err error
 
-	fmt.Println(fmt.Sprintf("-------- auth key: %s", fmt.Sprintf(gcmAuthHeaderKeyPrefix, self.authKey)))
-
 	response.HttpStatusCode,
 	result,
-	err = self.httpClient.PostJson(self.postUrl, gcmMsg, map[string]string { gcmAuthHeader:  fmt.Sprintf(gcmAuthHeaderKeyPrefix, self.authKey) })
+	err = self.httpClient.PostJson(self.postUrl, gcmMsg, map[string]string { gcmAuthHeader:  fmt.Sprintf(gcmAuthHeaderKeyPattern, self.authKey) })
 
 	if err != nil {
 
