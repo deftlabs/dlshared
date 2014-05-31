@@ -16,25 +16,18 @@
 
 package dlshared
 
-import (
-	"os"
-)
+import "os"
 
 // CreateDir will create a new directory with all parent directories created. If the
 // directory already exists, nothing is done. This sets the file permissions to 0750. This
 // will use the default group for the user. To override, change at the OS level.
-func CreateDir(path string) error {
-	return os.MkdirAll(path, 0750)
-}
+func CreateDir(path string) error { return os.MkdirAll(path, 0750) }
 
 // Delete a directory. This function checks to see if the directory exists and if it does,
 // nothing is done. If the directory does exists, it is deleted.
 func DeleteDir(path string) error {
-	if exists, err := FileOrDirExists(path); err != nil {
-		return err
-	} else if !exists {
-		return nil
-	}
+	if exists, err := FileOrDirExists(path); err != nil { return err
+	} else if !exists { return nil }
 
 	return os.Remove(path)
 }
@@ -43,10 +36,7 @@ func DeleteDir(path string) error {
 // source came from: http://bit.ly/18GDn5Q
 func FileOrDirExists(fileOrDir string) (bool, error) {
 	if _, err := os.Stat(fileOrDir); err != nil {
-		if os.IsNotExist(err) {
-			return false, nil
-		}
-
+		if os.IsNotExist(err) { return false, nil }
 		return false, err
 	}
 
