@@ -248,8 +248,7 @@ type GoogleCloudMsgSendStats struct {
 }
 
 func (self *GoogleCloudMsgSendStats) update(now *time.Time) {
-	self.Lock()
-	defer self.Unlock()
+	self.Lock(); defer self.Unlock()
 
 	if self.currentFailurePercent() <= self.acceptableGcmFailurePercent { self.reduceBackoff() } else { self.increaseBackoff() }
 
@@ -282,20 +281,17 @@ func (self *GoogleCloudMsgSendStats) currentFailurePercent() int {
 }
 
 func (self *GoogleCloudMsgSendStats) backoffTime() int {
-	self.Lock()
-	defer self.Unlock()
+	self.Lock(); defer self.Unlock()
 	return self.BackoffTimeInMs
 }
 
 func (self *GoogleCloudMsgSendStats) updateFailureCount(count int) {
-	self.Lock()
-	defer self.Unlock()
+	self.Lock(); defer self.Unlock()
 	self.CurrentFailureCount += count
 }
 
 func (self *GoogleCloudMsgSendStats) updateSuccessCount(count int) {
-	self.Lock()
-	defer self.Unlock()
+	self.Lock(); defer self.Unlock()
 	self.CurrentSuccessCount += count
 }
 
