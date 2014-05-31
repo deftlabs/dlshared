@@ -27,19 +27,12 @@ import (
 // must call the Start method before attempting to pass in a msg. To stop the consumer, close the
 // receive channel and THEN call the Stop method.
 type Consumer struct {
-
 	Logger
-
 	name string
-
 	consumeFunc func(msg interface{})
-
 	receiveChannel chan interface{}
-
 	maxGoroutines int
-
 	maxWaitOnStopInMs int64
-
 	waitGroup *sync.WaitGroup
 }
 
