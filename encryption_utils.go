@@ -16,18 +16,13 @@
 
 package dlshared
 
-import (
-	"code.google.com/p/go.crypto/bcrypt"
-)
+import "code.google.com/p/go.crypto/bcrypt"
 
 // Encrypt a password. The cost option is 4 - 31. If the cost is above 31,
 // then an error is displayed. If the cost is below four, then four is used. If a
 // nil or empty password is passed, this method returns an error.
 func HashPassword(password string, cost int) ([]byte, error) {
-	if len(password) == 0 {
-		return nil, NewStackError("You must pass in a non-empty password")
-	}
-
+	if len(password) == 0 { return nil, NewStackError("You must pass in a non-empty password") }
 	return bcrypt.GenerateFromPassword([]byte(password), cost)
 }
 
@@ -35,13 +30,9 @@ func HashPassword(password string, cost int) ([]byte, error) {
 // true is returned. If a nil or empty password or hash is passed, this method returns an error.
 func PasswordMatchesHash(hashedPassword []byte, password string) (bool, error) {
 
-	if len(password) == 0 {
-		return false, NewStackError("You must pass in a non-empty password")
-	}
+	if len(password) == 0 { return false, NewStackError("You must pass in a non-empty password") }
 
-	if len(hashedPassword) == 0 {
-		return false, NewStackError("You must pass in a non-empty hashed password")
-	}
+	if len(hashedPassword) == 0 { return false, NewStackError("You must pass in a non-empty hashed password") }
 
 	err := bcrypt.CompareHashAndPassword(hashedPassword, []byte(password))
 	return err == nil, nil
