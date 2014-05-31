@@ -39,8 +39,6 @@ func CurrentTimeInMillis() int64 {
 	return (int64(tv.Sec)*1e3 + int64(tv.Usec)/1e3)
 }
 
-
-
 // Returns the current time in seconds since epoch (i.e., a unix timestamp). Source from stackoverflow:
 // http://stackoverflow.com/questions/9539108/obtaining-a-unix-timestamp-in-go-language-current-time-in-seconds-since-epoch
 func CurrentTimeInSeconds() int32 { return int32(time.Now().Unix()) }
