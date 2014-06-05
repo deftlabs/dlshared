@@ -18,8 +18,9 @@ package dlshared
 
 import (
 	"fmt"
-	"sync"
+	//"sync"
 	"time"
+	"net"
 	"net/http"
 	"github.com/gorilla/mux"
 )
@@ -35,14 +36,16 @@ type HttpServer struct {
 	handlerDefs []*HttpServerHandlerDef
 	kernel *Kernel
 	Logger
-	staticFileDir string
-	bindAddress string
-	port int16
+	listener net.Listener
 }
 
 func (self *HttpServer) Id() string { return "httpServer" }
 
-func (self *HttpServer) Stop(kernel *Kernel) error { return nil }
+func (self *HttpServer) Stop(kernel *Kernel) error {
+
+	if self.listener != nil { if err := self.listener.Close(); err != nil { return err } }
+	return nil
+}
 
 func (self *HttpServer) Start(kernel *Kernel) error {
 
@@ -50,25 +53,31 @@ func (self *HttpServer) Start(kernel *Kernel) error {
 
 	self.Logger = kernel.Logger
 
-	self.staticFileDir = kernel.Configuration.String("server.http.staticFileDir", "./static/")
-	self.bindAddress = kernel.Configuration.String("server.http.bindAddress", "127.0.0.1")
-	self.port = int16(kernel.Configuration.Int("server.http.port", 8080))
+	staticFileDir := kernel.Configuration.String("server.http.staticFileDir", "./static/")
+	bindAddress := kernel.Configuration.String("server.http.bindAddress", "127.0.0.1")
+	port := int16(kernel.Configuration.Int("server.http.port", 8080))
 
 	self.kernel = kernel
 	self.router = mux.NewRouter()
 
 	if self.handlerDefs != nil { for _, handlerDef := range self.handlerDefs { self.router.HandleFunc(handlerDef.Path, handlerDef.HandlerFunc) } }
 
-	self.router.PathPrefix("/").Handler(http.FileServer(http.Dir(self.staticFileDir)))
+	self.router.PathPrefix("/").Handler(http.FileServer(http.Dir(staticFileDir)))
+
+	var err error
+
+	self.listener, err = net.Listen("tcp", AssembleHostnameAndPort(bindAddress, port))
+	if err != nil { return NewStackError(fmt.Sprintf("Unable to bind listener - address: %s - port: %d - err: %v", bindAddress, port, err)) }
 
 	self.server = &http.Server{
-		Addr: AssembleHostnameAndPort(self.bindAddress, self.port),
+		Addr: AssembleHostnameAndPort(bindAddress, port),
 		Handler: self.router,
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
 
+	/*
 	var startWaitGroup sync.WaitGroup
 	startWaitGroup.Add(1)
 
@@ -78,11 +87,14 @@ func (self *HttpServer) Start(kernel *Kernel) error {
 			panic(fmt.Sprintf("Error in listen and serve call - server unpredictable: %v", err))
 		}
 	}()
+	*/
 
 	// Wait for the goroutine to be allocated before moving on. This is a hack that does
 	// no really solve the problem. Ideally, listen and serve would have a notification/callback
 	// of some sort so that we know the server is initialized and running.
-	startWaitGroup.Wait()
+	//startWaitGroup.Wait()
+
+	if err = self.server.Serve(self.listener); err != nil { return err }
 
 	return nil
 }
