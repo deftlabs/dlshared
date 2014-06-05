@@ -45,6 +45,7 @@ func (self *HttpServer) Id() string {
 }
 
 func (self *HttpServer) Stop(kernel *Kernel) error {
+	http.Handle("/", nil)
 	return nil
 }
 
