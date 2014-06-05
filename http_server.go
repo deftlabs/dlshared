@@ -61,10 +61,11 @@ func (self *HttpServer) Start(kernel *Kernel) error {
 
 	self.router.PathPrefix("/").Handler(http.FileServer(http.Dir(self.staticFileDir)))
 
-	http.Handle("/", self.router)
+	//http.Handle("/", self.router)
 
 	self.server = &http.Server{
 		Addr: AssembleHostnameAndPort(self.bindAddress, self.port),
+		Handler: self.router,
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
 		MaxHeaderBytes: 1 << 20,
