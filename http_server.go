@@ -50,8 +50,6 @@ func (self *HttpServer) Stop(kernel *Kernel) error {
 
 func (self *HttpServer) Start(kernel *Kernel) error {
 
-	fmt.Println("--------------- start is called")
-
 	// TODO: Add access logging
 
 	self.Logger = kernel.Logger
