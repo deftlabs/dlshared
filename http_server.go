@@ -18,7 +18,7 @@ package dlshared
 
 import (
 	"fmt"
-	//"sync"
+	"sync"
 	"time"
 	"net"
 	"net/http"
@@ -77,24 +77,20 @@ func (self *HttpServer) Start(kernel *Kernel) error {
 		MaxHeaderBytes: 1 << 20,
 	}
 
-	/*
 	var startWaitGroup sync.WaitGroup
 	startWaitGroup.Add(1)
 
 	go func() {
 		startWaitGroup.Done()
-		if err := self.server.ListenAndServe(); err != nil {
+		if err = self.server.Serve(self.listener); err != nil {
 			panic(fmt.Sprintf("Error in listen and serve call - server unpredictable: %v", err))
 		}
 	}()
-	*/
 
 	// Wait for the goroutine to be allocated before moving on. This is a hack that does
 	// no really solve the problem. Ideally, listen and serve would have a notification/callback
 	// of some sort so that we know the server is initialized and running.
-	//startWaitGroup.Wait()
-
-	if err = self.server.Serve(self.listener); err != nil { return err }
+	startWaitGroup.Wait()
 
 	return nil
 }
