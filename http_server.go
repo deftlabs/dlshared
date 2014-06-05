@@ -83,7 +83,7 @@ func (self *HttpServer) Start(kernel *Kernel) error {
 	go func() {
 		startWaitGroup.Done()
 		if err = self.server.Serve(self.listener); err != nil {
-			panic(fmt.Sprintf("Error in listen and serve call - server unpredictable: %v", err))
+			//panic(fmt.Sprintf("Error in serve call - server unpredictable: %v", err))
 		}
 	}()
 
