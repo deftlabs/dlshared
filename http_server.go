@@ -21,6 +21,7 @@ import (
 	"sync"
 	"time"
 	"net"
+	"strings"
 	"net/http"
 	"github.com/gorilla/mux"
 )
@@ -83,7 +84,9 @@ func (self *HttpServer) Start(kernel *Kernel) error {
 	go func() {
 		startWaitGroup.Done()
 		if err = self.server.Serve(self.listener); err != nil {
-			//panic(fmt.Sprintf("Error in serve call - server unpredictable: %v", err))
+			if !strings.Contains(err.Error(), "closed") {
+				panic(fmt.Sprintf("Error in serve call - server unpredictable: %v", err))
+			}
 		}
 	}()
 
