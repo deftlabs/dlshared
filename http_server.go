@@ -40,14 +40,9 @@ type HttpServer struct {
 	port int16
 }
 
-func (self *HttpServer) Id() string {
-	return "httpServer"
-}
+func (self *HttpServer) Id() string { return "httpServer" }
 
-func (self *HttpServer) Stop(kernel *Kernel) error {
-	http.Handle("/", nil)
-	return nil
-}
+func (self *HttpServer) Stop(kernel *Kernel) error { return nil }
 
 func (self *HttpServer) Start(kernel *Kernel) error {
 
@@ -62,11 +57,7 @@ func (self *HttpServer) Start(kernel *Kernel) error {
 	self.kernel = kernel
 	self.router = mux.NewRouter()
 
-	if self.handlerDefs != nil {
-		for _, handlerDef := range self.handlerDefs {
-			self.router.HandleFunc(handlerDef.Path, handlerDef.HandlerFunc)
-		}
-	}
+	if self.handlerDefs != nil { for _, handlerDef := range self.handlerDefs { self.router.HandleFunc(handlerDef.Path, handlerDef.HandlerFunc) } }
 
 	self.router.PathPrefix("/").Handler(http.FileServer(http.Dir(self.staticFileDir)))
 
