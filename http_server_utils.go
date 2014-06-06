@@ -205,22 +205,15 @@ func appendInvalidErrorCode(ctx *HttpContext, param *HttpParam) {
 }
 
 func validateIntParam(ctx *HttpContext, param *HttpParam) {
+
 	param.Raw = retrieveParamValue(ctx, param)
 
-	if len(param.Raw) == 0 && param.Required {
-		appendInvalidErrorCode(ctx, param)
-		return
-	}
+	if len(param.Raw) == 0 && param.Required { appendInvalidErrorCode(ctx, param); return }
 
-	if len(param.Raw) == 0 {
-		return
-	}
+	if len(param.Raw) == 0 { return }
 
-	if val, err := strconv.Atoi(param.Raw); err != nil {
-		appendInvalidErrorCode(ctx, param)
-	} else {
-		param.setPresentValue(val)
-	}
+	if val, err := strconv.Atoi(param.Raw); err != nil { appendInvalidErrorCode(ctx, param)
+	} else { param.setPresentValue(val) }
 }
 
 func validateStringParam(ctx *HttpContext, param *HttpParam) {
