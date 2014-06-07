@@ -25,6 +25,12 @@ const (
 	nanosecondsPerMillisecond float64 = 1000000.0
 )
 
+// Returns the time from the milliseconds since epoch.
+func TimeFromMillis(timeInMillis int64) *time.Time {
+	time := time.Unix(timeInMillis/1000, 0)
+	return &time
+}
+
 // Convert a time struct to milliseconds since epoch.
 func TimeToMillis(tv *time.Time) int64 { return tv.UnixNano() / 1e6 }
 

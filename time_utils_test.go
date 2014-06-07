@@ -22,6 +22,12 @@ import (
 	"testing"
 )
 
+func TestTimeFromMillis(t *testing.T) {
+	time := TimeFromMillis(1402102305274)
+
+	if time == nil { t.Errorf("TestTimeFromMillis is broken - nil response?") }
+}
+
 func TestDurationToMillis(t *testing.T) {
 
 	start := time.Now()
