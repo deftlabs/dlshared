@@ -261,17 +261,11 @@ func validateObjectIdParam(ctx *HttpContext, param *HttpParam) {
 
 	param.Raw = retrieveParamValue(ctx, param)
 
-	if len(param.Raw) == 0 && param.Required {
-		appendInvalidErrorCode(ctx, param)
-		return
-	}
+	if len(param.Raw) == 0 && param.Required { appendInvalidErrorCode(ctx, param); return }
 
 	if len(param.Raw) == 0 { return }
 
-	if !bson.IsObjectIdHex(param.Raw) {
-		appendInvalidErrorCode(ctx, param)
-		return
-	}
+	if !bson.IsObjectIdHex(param.Raw) { appendInvalidErrorCode(ctx, param); return }
 
 	value := bson.ObjectIdHex(param.Raw)
 	param.setPresentValue(&value)
