@@ -83,7 +83,7 @@ func (self *HttpParam) String() string { return self.Value.(string) }
 
 func (self *HttpParam) Bool() bool { return self.Value.(bool) }
 
-func (self *HttpParam) ObjectId() *bson.ObjectId { return self.Value.(*bson.ObjectId) }
+func (self *HttpParam) ObjectId() *bson.ObjectId { if self.Value != nil { return self.Value.(*bson.ObjectId) } else { return nil } }
 
 // Set a valid value for a param. Missing can be valid, but not present.
 func (self *HttpParam) setPresentValue(value interface{}) {
