@@ -86,7 +86,7 @@ func (self *HttpParam) Bool() bool { return self.Value.(bool) }
 
 func (self *HttpParam) ObjectId() *bson.ObjectId { if self.Value != nil { return self.Value.(*bson.ObjectId) } else { return nil } }
 
-func (self *HttpParam) Json() interface{} { return self.Value }
+func (self *HttpParam) Json() map[string]interface{} { if self.Value == nil { return nil } else { return self.Value.(map[string]interface{}) } }
 
 // Set a valid value for a param. Missing can be valid, but not present.
 func (self *HttpParam) setPresentValue(value interface{}) {
@@ -131,6 +131,8 @@ func (self *HttpContext) HasParam(name string) bool {
 func (self *HttpContext) ParamBool(name string) bool { return self.Params[name].Bool() }
 
 func (self *HttpContext) ParamObjectId(name string) *bson.ObjectId { return self.Params[name].ObjectId() }
+
+func (self *HttpContext) ParamJson(name string) map[string]interface{} { return self.Params[name].Json() }
 
 func (self *HttpContext) HasRawErrors() bool { return len(self.Errors) > 0 }
 
@@ -181,6 +183,7 @@ func retrieveJsonParamValue(ctx *HttpContext, param *HttpParam) interface{} {
 	val, found := ctx.postJson[param.Name]
 	if !found { return noData }
 
+	// If this is json, return the value.
 	if param.DataType == HttpJsonParam { return val }
 
 	valType := reflect.TypeOf(val)
