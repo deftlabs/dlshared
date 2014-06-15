@@ -38,6 +38,7 @@ const(
 	HttpBoolParam = HttpParamDataType(3) // Boolean types include: 1, t, T, TRUE, true, True, 0, f, F, FALSE, false
 	HttpObjectIdParam = HttpParamDataType(4)
 	HttpJsonParam = HttpParamDataType(5)
+	HttpJsonArrayParam = HttpParamDataType(6)
 
 	// All of the param types only support single values (i.e., no slices). If multiple values are present, the
 	// first is taken.
@@ -88,6 +89,8 @@ func (self *HttpParam) ObjectId() *bson.ObjectId { if self.Value != nil { return
 
 func (self *HttpParam) Json() map[string]interface{} { if self.Value == nil { return nil } else { return self.Value.(map[string]interface{}) } }
 
+func (self *HttpParam) JsonArray() []interface{} { if self.Value == nil { return nil } else { return self.Value.([]interface{}) } }
+
 // Set a valid value for a param. Missing can be valid, but not present.
 func (self *HttpParam) setPresentValue(value interface{}) {
 	self.Present = true
@@ -111,6 +114,7 @@ func (self *HttpContext) ParamsAreValid() bool {
 			case HttpBoolParam: validateBoolParam(self, param)
 			case HttpObjectIdParam: validateObjectIdParam(self, param)
 			case HttpJsonParam: validateJsonParam(self, param)
+			case HttpJsonArrayParam: validateJsonParam(self, param)
 		}
 	}
 
@@ -133,6 +137,8 @@ func (self *HttpContext) ParamBool(name string) bool { return self.Params[name].
 func (self *HttpContext) ParamObjectId(name string) *bson.ObjectId { return self.Params[name].ObjectId() }
 
 func (self *HttpContext) ParamJson(name string) map[string]interface{} { return self.Params[name].Json() }
+
+func (self *HttpContext) ParamJsonArray(name string) []interface{} { return self.Params[name].JsonArray() }
 
 func (self *HttpContext) HasRawErrors() bool { return len(self.Errors) > 0 }
 
@@ -184,7 +190,7 @@ func retrieveJsonParamValue(ctx *HttpContext, param *HttpParam) interface{} {
 	if !found { return noData }
 
 	// If this is json, return the value.
-	if param.DataType == HttpJsonParam { return val }
+	if param.DataType == HttpJsonParam || param.DataType == HttpJsonArrayParam { return val }
 
 	valType := reflect.TypeOf(val)
 
@@ -318,6 +324,10 @@ func (self *HttpContext) DefineObjectIdParam(name, invalidErrorCode string, para
 
 func (self *HttpContext) DefineJsonParam(name, invalidErrorCode string, paramType HttpParamType, required bool) {
 	self.Params[name] = &HttpParam{ Name: name, InvalidErrorCode: invalidErrorCode, DataType: HttpJsonParam, Required: required, Type: paramType, Valid: true }
+}
+
+func (self *HttpContext) DefineJsonArrayParam(name, invalidErrorCode string, paramType HttpParamType, required bool) {
+	self.Params[name] = &HttpParam{ Name: name, InvalidErrorCode: invalidErrorCode, DataType: HttpJsonArrayParam, Required: required, Type: paramType, Valid: true }
 }
 
 func (self *HttpContext) DefineStringParam(name, invalidErrorCode string, paramType HttpParamType, required bool, minLength, maxLength int) {

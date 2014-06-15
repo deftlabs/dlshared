@@ -51,8 +51,12 @@ func TestNewHttpContextJsonPostParams(t *testing.T) {
 	nestedDoc := make(map[string]interface{})
 	nestedDoc["testStr0"] = "ok"
 	nestedDoc["testStr1"] = "what"
-
 	doc["testJson0"] = nestedDoc
+
+	nestedArray := make([]string, 0, 0)
+	nestedArray = append(nestedArray, "one")
+	nestedArray = append(nestedArray, "two")
+	doc["testJsonArray0"] = nestedArray
 
 	data, err := json.Marshal(doc)
 	if err != nil { t.Errorf("TestNewHttpContextJsonPostParams is broken - cannot encode json: %v", err); return }
@@ -162,6 +166,8 @@ func defineParams(ctx *HttpContext, httpParamType HttpParamType) {
 	if httpParamType == HttpParamJsonPost {
 		ctx.DefineJsonParam("testJson0", "invalid_json0", httpParamType, true)
 		ctx.DefineJsonParam("testJson1", "invalid_json1", httpParamType, false)
+
+		ctx.DefineJsonParam("testJsonArray0", "invalid_json_array_1", httpParamType, true)
 	}
 }
 
@@ -246,6 +252,10 @@ func validateParamOutput(paramTypeName string, ctx *HttpContext, t *testing.T) {
 
 		if nestedDoc["testStr0"] != "ok" { t.Errorf("%s is broken - testJson0.testJson0.testStr0 does not equal ok", paramTypeName) }
 		if nestedDoc["testStr1"] != "what" { t.Errorf("%s is broken - testJson0.testJson0.testStr1 does not equal what", paramTypeName) }
+
+		if !ctx.Params["testJsonArray0"].Present { t.Errorf("%s is broken - testJsonArray0 is not present", paramTypeName) }
+		nestedArray := ctx.Params["testJsonArray0"].Value.([]interface{})
+		if nestedArray == nil || len(nestedArray) == 0 { t.Errorf("%s is broken - testJsonArray0 is nil", paramTypeName); return }
 	}
 }
 
