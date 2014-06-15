@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"testing"
 	"net/http"
+	"encoding/json"
 	"net/http/httptest"
 )
 
@@ -39,15 +40,30 @@ func TestNewHttpContextBasic(t *testing.T) {
 func TestNewHttpContextJsonPostParams(t *testing.T) {
 	response := httptest.NewRecorder()
 
+	doc := make(map[string]interface{})
+	doc["testObjectId0"] = "52e29b18eee7d580e9bb1544"
+	doc["testObjectId1"] = ""
+	doc["testInt0"] = 100
+	doc["testBool0"] = true
+	doc["testFloat0"] = 99.9999999999
+	doc["testString0"] = "hello!"
+
+	nestedDoc := make(map[string]interface{})
+	nestedDoc["testStr0"] = "ok"
+	nestedDoc["testStr1"] = "what"
+
+	doc["testJson0"] = nestedDoc
+
+	data, err := json.Marshal(doc)
+	if err != nil { t.Errorf("TestNewHttpContextJsonPostParams is broken - cannot encode json: %v", err); return }
+
 	request, err := http.NewRequest(
 		"POST",
 		"/foo",
-		bytes.NewBuffer([]byte("{\"testObjectId0\": \"52e29b18eee7d580e9bb1544\",\"testObjectId1\":\"\",\"testInt0\": 100,\"testInt1\":\"\",\"testBool0\": true,\"testBool1\":\"\", \"testFloat0\": 99.9999999999,\"testFloat1\":\"\", \"testString0\": \"hello!\",\"testString1\":\"\"}")),
+		bytes.NewBuffer(data),
 	)
 
-	if err != nil {
-		t.Errorf("TestNewHttpContextJsonPostParams is broken - NewRequest failed")
-	}
+	if err != nil { t.Errorf("TestNewHttpContextJsonPostParams is broken - NewRequest failed"); return }
 
 	ctx := NewHttpContext(response, request)
 
@@ -142,13 +158,17 @@ func defineParams(ctx *HttpContext, httpParamType HttpParamType) {
 
 	ctx.DefineObjectIdParam("testObjectId0", "invalid_objectId0", httpParamType, true)
 	ctx.DefineObjectIdParam("testObjectId1", "invalid_objectId1", httpParamType, false)
+
+	if httpParamType == HttpParamJsonPost {
+		ctx.DefineJsonParam("testJson0", "invalid_json0", httpParamType, true)
+		ctx.DefineJsonParam("testJson1", "invalid_json1", httpParamType, false)
+	}
 }
 
 func validateParamOutput(paramTypeName string, ctx *HttpContext, t *testing.T) {
 
 	if !ctx.ParamsAreValid() {
 		t.Errorf("%s is broken - params are not valid", paramTypeName)
-
 		for i := range ctx.ErrorCodes { fmt.Println(ctx.ErrorCodes[i]) }
 	}
 
@@ -216,5 +236,16 @@ func validateParamOutput(paramTypeName string, ctx *HttpContext, t *testing.T) {
 
 	if ctx.Params["testObjectId1"].Present { t.Errorf("%s is broken - testObjectId1 is present", paramTypeName) }
 
+	if paramTypeName == "jsonpost" {
+		if !ctx.Params["testJson0"].Present { t.Errorf("%s is broken - testJson0 is not present", paramTypeName) }
+		if ctx.Params["testJson1"].Present { t.Errorf("%s is broken - testJson1 is present", paramTypeName) }
+
+		nestedDoc := ctx.Params["testJson0"].Value.(map[string]interface{})
+
+		if nestedDoc == nil { t.Errorf("%s is broken - testJson0 is nil", paramTypeName); return }
+
+		if nestedDoc["testStr0"] != "ok" { t.Errorf("%s is broken - testJson0.testJson0.testStr0 does not equal ok", paramTypeName) }
+		if nestedDoc["testStr1"] != "what" { t.Errorf("%s is broken - testJson0.testJson0.testStr1 does not equal what", paramTypeName) }
+	}
 }
 

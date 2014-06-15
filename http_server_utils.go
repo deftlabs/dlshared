@@ -37,6 +37,7 @@ const(
 	HttpFloatParam = HttpParamDataType(2)
 	HttpBoolParam = HttpParamDataType(3) // Boolean types include: 1, t, T, TRUE, true, True, 0, f, F, FALSE, false
 	HttpObjectIdParam = HttpParamDataType(4)
+	HttpJsonParam = HttpParamDataType(5)
 
 	// All of the param types only support single values (i.e., no slices). If multiple values are present, the
 	// first is taken.
@@ -85,6 +86,8 @@ func (self *HttpParam) Bool() bool { return self.Value.(bool) }
 
 func (self *HttpParam) ObjectId() *bson.ObjectId { if self.Value != nil { return self.Value.(*bson.ObjectId) } else { return nil } }
 
+func (self *HttpParam) Json() interface{} { return self.Value }
+
 // Set a valid value for a param. Missing can be valid, but not present.
 func (self *HttpParam) setPresentValue(value interface{}) {
 	self.Present = true
@@ -107,6 +110,7 @@ func (self *HttpContext) ParamsAreValid() bool {
 			case HttpFloatParam: validateFloatParam(self, param)
 			case HttpBoolParam: validateBoolParam(self, param)
 			case HttpObjectIdParam: validateObjectIdParam(self, param)
+			case HttpJsonParam: validateJsonParam(self, param)
 		}
 	}
 
@@ -132,7 +136,7 @@ func (self *HttpContext) HasRawErrors() bool { return len(self.Errors) > 0 }
 
 // This returns the param value as a string. If the param is missing or empty,
 // the string will be len == 0.
-func retrieveParamValue(ctx *HttpContext, param *HttpParam) string {
+func retrieveParamValue(ctx *HttpContext, param *HttpParam) interface{} {
 	switch param.Type {
 		case HttpParamPost: return strings.TrimSpace(ctx.Request.PostFormValue(param.Name))
 		case HttpParamJsonPost: return retrieveJsonParamValue(ctx, param)
@@ -143,11 +147,13 @@ func retrieveParamValue(ctx *HttpContext, param *HttpParam) string {
 	return nadaStr
 }
 
-func retrieveJsonParamValue(ctx *HttpContext, param *HttpParam) string {
+func retrieveJsonParamValue(ctx *HttpContext, param *HttpParam) interface{} {
 
-	if len(ctx.Errors) > 0 {
-		return nadaStr
-	}
+	var noData interface{}
+
+	if param.DataType != HttpJsonParam { noData = nadaStr }
+
+	if len(ctx.Errors) > 0 { return noData }
 
 	// If this is the first access, read the body
 	if len(ctx.body) == 0 {
@@ -155,7 +161,7 @@ func retrieveJsonParamValue(ctx *HttpContext, param *HttpParam) string {
 		ctx.body, err = ioutil.ReadAll(ctx.Request.Body)
 		if err != nil {
 			ctx.Errors = append(ctx.Errors, NewStackError("Error in raw data extraction - error: %v", err))
-			return nadaStr
+			return noData
 		}
 	}
 
@@ -164,7 +170,7 @@ func retrieveJsonParamValue(ctx *HttpContext, param *HttpParam) string {
 		err := json.Unmarshal(ctx.body, &genJson)
 		if err != nil {
 			ctx.Errors = append(ctx.Errors, NewStackError("Error in raw json data extraction - error: %v", err))
-			return nadaStr
+			return noData
 		}
 
 		ctx.postJson = genJson.(map[string]interface{})
@@ -173,23 +179,23 @@ func retrieveJsonParamValue(ctx *HttpContext, param *HttpParam) string {
 	// Look for the value in the json. The json may hold the data in a variety
 	// of formats. Convert back to a string to deal with the other data types :-(
 	val, found := ctx.postJson[param.Name]
-	if !found {
-		return nadaStr
-	}
+	if !found { return noData }
+
+	if param.DataType == HttpJsonParam { return val }
 
 	valType := reflect.TypeOf(val)
 
-	if valType == nil { return nadaStr }
+	if valType == nil { return noData }
 
 	switch valType.Kind() {
-		case reflect.Invalid: return nadaStr
+		case reflect.Invalid: return noData
 		case reflect.Bool: return fmt.Sprintf("%t", val.(bool))
 		case reflect.Float64: return fmt.Sprintf("%g", val.(float64))
 		case reflect.String: return val.(string)
-		default: return nadaStr
+		default: return noData
 	}
 
-	return nadaStr
+	return noData
 }
 
 func appendInvalidErrorCode(ctx *HttpContext, param *HttpParam) {
@@ -206,7 +212,7 @@ func appendInvalidErrorCode(ctx *HttpContext, param *HttpParam) {
 
 func validateIntParam(ctx *HttpContext, param *HttpParam) {
 
-	param.Raw = retrieveParamValue(ctx, param)
+	param.Raw = retrieveParamValue(ctx, param).(string)
 
 	if len(param.Raw) == 0 && param.Required { appendInvalidErrorCode(ctx, param); return }
 
@@ -218,7 +224,7 @@ func validateIntParam(ctx *HttpContext, param *HttpParam) {
 
 func validateStringParam(ctx *HttpContext, param *HttpParam) {
 
-	param.Raw = retrieveParamValue(ctx, param)
+	param.Raw = retrieveParamValue(ctx, param).(string)
 
 	if len(param.Raw) == 0 && param.Required {
 		appendInvalidErrorCode(ctx, param)
@@ -239,30 +245,20 @@ func validateStringParam(ctx *HttpContext, param *HttpParam) {
 }
 
 func validateFloatParam(ctx *HttpContext, param *HttpParam) {
-	param.Raw = retrieveParamValue(ctx, param)
+	param.Raw = retrieveParamValue(ctx, param).(string)
 
-	if len(param.Raw) == 0 && param.Required {
-		appendInvalidErrorCode(ctx, param)
-		return
-	}
+	if len(param.Raw) == 0 && param.Required { appendInvalidErrorCode(ctx, param); return }
+	if len(param.Raw) == 0 { return }
 
-	if len(param.Raw) == 0 {
-		return
-	}
-
-	if val, err := strconv.ParseFloat(param.Raw, 64); err != nil {
-		appendInvalidErrorCode(ctx, param)
-	} else {
-		param.setPresentValue(val)
-	}
+	if val, err := strconv.ParseFloat(param.Raw, 64); err != nil { appendInvalidErrorCode(ctx, param)
+	} else { param.setPresentValue(val) }
 }
 
 func validateObjectIdParam(ctx *HttpContext, param *HttpParam) {
 
-	param.Raw = retrieveParamValue(ctx, param)
+	param.Raw = retrieveParamValue(ctx, param).(string)
 
 	if len(param.Raw) == 0 && param.Required { appendInvalidErrorCode(ctx, param); return }
-
 	if len(param.Raw) == 0 { return }
 
 	if !bson.IsObjectIdHex(param.Raw) { appendInvalidErrorCode(ctx, param); return }
@@ -271,10 +267,20 @@ func validateObjectIdParam(ctx *HttpContext, param *HttpParam) {
 	param.setPresentValue(&value)
 }
 
+func validateJsonParam(ctx *HttpContext, param *HttpParam) {
+
+	val := retrieveParamValue(ctx, param)
+
+	if val == nil && param.Required { appendInvalidErrorCode(ctx, param); return }
+	if val == nil { return }
+
+	param.setPresentValue(val)
+}
+
 // Boolean types include: 1, t, T, TRUE, true, True, 0, f, F, FALSE, false
 func validateBoolParam(ctx *HttpContext, param *HttpParam) {
 
-	param.Raw = retrieveParamValue(ctx, param)
+	param.Raw = retrieveParamValue(ctx, param).(string)
 
 	if len(param.Raw) == 0 && param.Required {
 		appendInvalidErrorCode(ctx, param)
@@ -305,6 +311,10 @@ func (self *HttpContext) DefineFloatParam(name, invalidErrorCode string, paramTy
 
 func (self *HttpContext) DefineObjectIdParam(name, invalidErrorCode string, paramType HttpParamType, required bool) {
 	self.Params[name] = &HttpParam{ Name: name, InvalidErrorCode: invalidErrorCode, DataType: HttpObjectIdParam, Required: required, Type: paramType, Valid: true }
+}
+
+func (self *HttpContext) DefineJsonParam(name, invalidErrorCode string, paramType HttpParamType, required bool) {
+	self.Params[name] = &HttpParam{ Name: name, InvalidErrorCode: invalidErrorCode, DataType: HttpJsonParam, Required: required, Type: paramType, Valid: true }
 }
 
 func (self *HttpContext) DefineStringParam(name, invalidErrorCode string, paramType HttpParamType, required bool, minLength, maxLength int) {
