@@ -165,8 +165,18 @@ func (self *MongoDataSource) FindManyWithBatchSize(selector interface{}, batchSi
 }
 
 // The caller must close the cursor when done. Use: defer cursor.Close()
+func (self *MongoDataSource) FindManyWithBatchSizeAndSort(selector interface{}, batchSize int, sortFields ...string) *mgo.Iter {
+	return self.Mongo.Collection(self.DbName, self.CollectionName).Find(selector).Sort(sortFields...).Batch(batchSize).Iter()
+}
+
+// The caller must close the cursor when done. Use: defer cursor.Close()
 func (self *MongoDataSource) FindManyWithOffsetMaxBatchSize(selector interface{}, offset, max, batchSize int) *mgo.Iter {
 	return self.Mongo.Collection(self.DbName, self.CollectionName).Find(selector).Skip(offset).Limit(max).Batch(batchSize).Iter()
+}
+
+// The caller must close the cursor when done. Use: defer cursor.Close()
+func (self *MongoDataSource) FindManyWithOffsetMaxBatchSizeAndSort(selector interface{}, offset, max, batchSize int, sortFields ...string) *mgo.Iter {
+	return self.Mongo.Collection(self.DbName, self.CollectionName).Find(selector).Sort(sortFields...).Skip(offset).Limit(max).Batch(batchSize).Iter()
 }
 
 // Push to an array call using a "safe" operation. If this is a standalone mongo or a mongos, it will use: WMode: "majority".
