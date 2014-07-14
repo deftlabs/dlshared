@@ -332,6 +332,9 @@ func (self *MongoDataSource) EnsureTtlIndex(field string, expireAfterSeconds int
 	return nil
 }
 
+// Returns the current time in utc.
+func (self *MongoDataSource) NowInUtc() *time.Time { return NowInUtc() }
+
 func (self *MongoDataSource) Now() *time.Time {
 	now := time.Now()
 	return &now
