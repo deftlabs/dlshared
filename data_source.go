@@ -43,6 +43,7 @@ func (self *MongoDataSource) NewObjectId() *bson.ObjectId {
 // Insert a document into a collection with the base configured write concern.
 func (self *MongoDataSource) Insert(doc interface{}) error {
 	if err := self.Mongo.Collection(self.DbName, self.CollectionName).Insert(doc); err != nil {
+		if self.IsDupErr(err) { return err }
 		return NewStackError("Unable to Insert - db: %s - collection: %s - error: %v", self.DbName, self.CollectionName, err)
 	}
 
