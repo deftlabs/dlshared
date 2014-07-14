@@ -95,6 +95,7 @@ func (self *MongoDataSource) InsertSafe(doc interface{}) error {
 
 	session.SetSafe(self.Mongo.DefaultSafe)
 	if err := session.DB(self.DbName).C(self.CollectionName).Insert(doc); err != nil {
+		if self.IsDupErr(err) { return err }
 		return NewStackError("Unable to InsertSafe - db: %s - collection: %s - error: %v", self.DbName, self.CollectionName, err)
 	}
 
