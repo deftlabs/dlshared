@@ -25,10 +25,12 @@ const (
 	nanosecondsPerMillisecond float64 = 1000000.0
 )
 
-// Returns the time from the milliseconds since epoch.
+// Returns the time from the milliseconds since epoch. This returns the time in UTC.
 func TimeFromMillis(timeInMillis int64) *time.Time {
-	time := time.Unix(timeInMillis/1000, 0)
-	return &time
+	theTime := time.Unix(timeInMillis/1000, 0)
+	location, _ := time.LoadLocation("UTC")
+	theTime = theTime.In(location)
+	return &theTime
 }
 
 // Convert a time struct to milliseconds since epoch.
