@@ -42,6 +42,12 @@ func NowInUtc() *time.Time {
 	return &time
 }
 
+func NowInUtcMinusSeconds(seconds int) *time.Time {
+	now := NowInUtc()
+	adjusted := now.Add((time.Duration(seconds)*time.Second)*-1)
+	return &adjusted
+}
+
 // Convert a duration to milliseconds.
 func DurationToMillis(dur *time.Duration) int64 { return int64(float64(dur.Nanoseconds()) / nanosecondsPerMillisecond) }
 
