@@ -36,6 +36,16 @@ func TestTime(t *testing.T) {
 	if !now.After(toCheck) { t.Errorf("TestTime is broken - nothing is after Now") }
 }
 
+func TestTimeDuration(t *testing.T) {
+
+	now := time.Now()
+	then := now.Add(60*time.Second)
+
+	duration := then.Sub(now)
+
+	if duration.Seconds() != 60 { t.Errorf("TestTimeDuration is broken - value should be 60") }
+}
+
 func TestChannels1(t *testing.T) {
 
 	channel := make(chan bool, 1)
