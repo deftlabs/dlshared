@@ -22,6 +22,20 @@ import (
 	"testing"
 )
 
+func TestMinuteOfTheDay(t *testing.T) {
+	location, err := time.LoadLocation("UTC")
+	if err != nil { t.Errorf("TestMinuteOfTheDay is broken - load location error: %v", err) }
+
+	checkTime := time.Date(2014, 7, 16, 23, 59, 30, 0, location)
+	if val := MinuteOfTheDay(&checkTime); val != 1439 { t.Errorf("TestMinuteOfTheDay is broken - expecting: 1439 - recieved: %d", val) }
+
+	checkTime = time.Date(2014, 7, 16, 0, 0, 0, 0, location)
+	if val := MinuteOfTheDay(&checkTime); val != 0 { t.Errorf("TestMinuteOfTheDay is broken - expecting: 0 - recieved: %d", val) }
+
+	checkTime = time.Date(2014, 7, 16, 12, 0, 0, 0, location)
+	if val := MinuteOfTheDay(&checkTime); val != 720 { t.Errorf("TestMinuteOfTheDay is broken - expecting: 720 - recieved: %d", val) }
+}
+
 func TestTimeStartOfCurrentDay(t *testing.T) {
 	start := TimeStartOfCurrentDay()
 	if start == nil { t.Errorf("TestTimeStartOfCurrentDay is broken - nil response") }
@@ -62,7 +76,6 @@ func TestDurationToMillis(t *testing.T) {
 
 func TestTimeToMillis(t *testing.T) {
 	location, err := time.LoadLocation("UTC")
-
 	if err != nil { t.Errorf("TestTimeToMillis is broken - load location error: %v", err) }
 
 	tv := time.Date(2014, 1, 29, 14, 14, 32, 0, location)
