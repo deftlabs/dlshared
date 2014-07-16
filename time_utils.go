@@ -25,6 +25,24 @@ const (
 	nanosecondsPerMillisecond float64 = 1000000.0
 )
 
+// Returns the time configured to the start of the current day (00:00:00 etc). The current
+// day is defined using UTC.
+func TimeStartOfCurrentDay() *time.Time {
+	location, _ := time.LoadLocation("UTC")
+	now := NowInUtc()
+	startOfCurrentDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, location)
+	return &startOfCurrentDay
+}
+
+// Returns the time configured to the start of the next day (00:00:00 etc). The current
+// day is defined using UTC.
+func TimeStartOfNextDay() *time.Time {
+	location, _ := time.LoadLocation("UTC")
+	tomorrow := NowInUtc().Add(time.Duration(24) * time.Hour)
+	startOfNextDay := time.Date(tomorrow.Year(), tomorrow.Month(), tomorrow.Day(), 0, 0, 0, 0, location)
+	return &startOfNextDay
+}
+
 // Returns the time from the milliseconds since epoch. This returns the time in UTC.
 func TimeFromMillis(timeInMillis int64) *time.Time {
 	theTime := time.Unix(timeInMillis/1000, 0)
