@@ -25,6 +25,9 @@ const (
 	nanosecondsPerMillisecond float64 = 1000000.0
 )
 
+// Returns the minute of the day (0 - 1439) for the time passed. This does not look at seconds or nanoseconds.
+func MinuteOfTheDay(checkTime *time.Time) int16 { return int16((checkTime.Hour() * 60) + checkTime.Minute()) }
+
 // Returns the time configured to the start of the current day (00:00:00 etc). The current
 // day is defined using UTC.
 func TimeStartOfCurrentDay() *time.Time {
