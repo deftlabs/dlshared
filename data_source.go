@@ -162,6 +162,11 @@ func (self *MongoDataSource) FindDistinctStrs(selector interface{}, fieldName st
 }
 
 // The caller must close the cursor when done. Use: defer cursor.Close()
+func (self *MongoDataSource) FindAllWithBatchSize(batchSize int) *mgo.Iter {
+	return self.Mongo.Collection(self.DbName, self.CollectionName).Find(&bson.M{}).Batch(batchSize).Iter()
+}
+
+// The caller must close the cursor when done. Use: defer cursor.Close()
 func (self *MongoDataSource) FindManyWithBatchSize(selector interface{}, batchSize int) *mgo.Iter {
 	return self.Mongo.Collection(self.DbName, self.CollectionName).Find(selector).Batch(batchSize).Iter()
 }
