@@ -22,10 +22,30 @@ import (
 	"testing"
 )
 
-func TestTimeFromMillis(t *testing.T) {
-	time := TimeFromMillis(1402102305274)
+func TestTimeStartOfCurrentDay(t *testing.T) {
+	start := TimeStartOfCurrentDay()
+	if start == nil { t.Errorf("TestTimeStartOfCurrentDay is broken - nil response") }
+	if start.Hour() != 0 { t.Errorf("TestTimeStartOfCurrentDay is broken - hour not zero") }
+	if start.Minute() != 0 { t.Errorf("TestTimeStartOfCurrentDay is broken - minute not zero") }
+	if start.Second() != 0 { t.Errorf("TestTimeStartOfCurrentDay is broken - second not zero") }
+	if start.Nanosecond() != 0 { t.Errorf("TestTimeStartOfCurrentDay is broken - nanosecond not zero") }
+}
 
-	if time == nil { t.Errorf("TestTimeFromMillis is broken - nil response?") }
+func TestTimeStartOfNextDay(t *testing.T) {
+
+	today := NowInUtc()
+	start := TimeStartOfNextDay()
+
+	if start.Day() == today.Day() { t.Errorf("TestTimeStartOfNextDay is broken - today and tomorrow day is the same") }
+	if start == nil { t.Errorf("TestTimeStartOfNextDay is broken - nil response") }
+	if start.Hour() != 0 { t.Errorf("TestTimeStartOfNextDay is broken - hour not zero") }
+	if start.Minute() != 0 { t.Errorf("TestTimeStartOfNextDay is broken - minute not zero") }
+	if start.Second() != 0 { t.Errorf("TestTimeStartOfNextDay is broken - second not zero") }
+	if start.Nanosecond() != 0 { t.Errorf("TestTimeStartOfNextDay is broken - nanosecond not zero") }
+}
+
+func TestTimeFromMillis(t *testing.T) {
+	if time := TimeFromMillis(1402102305274); time == nil { t.Errorf("TestTimeFromMillis is broken - nil response?") }
 }
 
 func TestDurationToMillis(t *testing.T) {
