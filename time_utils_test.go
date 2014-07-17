@@ -22,6 +22,28 @@ import (
 	"testing"
 )
 
+func TestMinuteHourOfTheDay(t *testing.T) {
+
+	hourOfTheDay := MinuteHourOfTheDay(0)
+	if hourOfTheDay != 0 { t.Errorf("TestMinuteHourOfTheDay is broken - expecting: 0 - received: %d", hourOfTheDay) }
+
+	hourOfTheDay = MinuteHourOfTheDay(59)
+	if hourOfTheDay != 0 { t.Errorf("TestMinuteHourOfTheDay is broken - expecting: 0 - received: %d", hourOfTheDay) }
+
+	hourOfTheDay = MinuteHourOfTheDay(1439)
+	if hourOfTheDay != 23 { t.Errorf("TestMinuteHourOfTheDay is broken - expecting: 23 - received: %d", hourOfTheDay) }
+
+	hourOfTheDay = MinuteHourOfTheDay(720)
+	if hourOfTheDay != 12 { t.Errorf("TestMinuteHourOfTheDay is broken - expecting: 12 - received: %d", hourOfTheDay) }
+
+	hourOfTheDay = MinuteHourOfTheDay(60)
+	if hourOfTheDay != 1 { t.Errorf("TestMinuteHourOfTheDay is broken - expecting: 1 - received: %d", hourOfTheDay) }
+
+	hourOfTheDay = MinuteHourOfTheDay(120)
+	if hourOfTheDay != 2 { t.Errorf("TestMinuteHourOfTheDay is broken - expecting: 2 - received: %d", hourOfTheDay) }
+
+}
+
 func TestMinuteOfTheDay(t *testing.T) {
 	location, err := time.LoadLocation("UTC")
 	if err != nil { t.Errorf("TestMinuteOfTheDay is broken - load location error: %v", err) }
