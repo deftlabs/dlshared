@@ -28,6 +28,11 @@ const (
 // Returns the minute of the day (0 - 1439) for the time passed. This does not look at seconds or nanoseconds.
 func MinuteOfTheDay(checkTime *time.Time) int16 { return int16((checkTime.Hour() * 60) + checkTime.Minute()) }
 
+// Returns the hour of the day for the minute of the day passed. The minute of the day is a value within 0-1439.
+// The hour of the day is a value between 0-23. This expects your data to be in the proper range, it will return
+// a bad result if bad data is passed.
+func MinuteHourOfTheDay(minuteOfTheDay int16) int8 { return int8(minuteOfTheDay / 60) }
+
 // Returns the time configured to the start of the current day (00:00:00 etc). The current
 // day is defined using UTC.
 func TimeStartOfCurrentDay() *time.Time {
