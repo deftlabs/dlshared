@@ -62,11 +62,7 @@ func TimeFromMillis(timeInMillis int64) *time.Time {
 // Convert a time struct to milliseconds since epoch.
 func TimeToMillis(tv *time.Time) int64 { return tv.UnixNano() / 1e6 }
 
-func NowInUtc() *time.Time {
-	location, _ := time.LoadLocation("UTC")
-	time := time.Now().In(location)
-	return &time
-}
+func NowInUtc() *time.Time { time := time.Now().UTC(); return &time }
 
 func NowInUtcMinusSeconds(seconds int) *time.Time {
 	now := NowInUtc()
