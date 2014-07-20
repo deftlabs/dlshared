@@ -87,6 +87,13 @@ func (self *MongoDataSource) UpdateSafe(selector interface{}, change interface{}
 	return nil
 }
 
+// Get the count by selector.
+func (self *MongoDataSource) Count(selector interface{}) (int, error) {
+	session := self.SessionClone()
+	defer session.Close()
+	return session.DB(self.DbName).C(self.CollectionName).Find(selector).Count()
+}
+
 // Insert a document into a collection with the passed write concern.
 func (self *MongoDataSource) InsertSafe(doc interface{}) error {
 	session := self.SessionClone()
