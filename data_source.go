@@ -173,6 +173,11 @@ func (self *MongoDataSource) FindAllWithBatchSize(batchSize int) *mgo.Iter {
 	return self.Mongo.Collection(self.DbName, self.CollectionName).Find(&bson.M{}).Batch(batchSize).Iter()
 }
 
+// You must close this cursor.
+func (self *MongoDataSource) FindFirst(selector interface{}, sortFields ...string) *mgo.Iter {
+	return self.Mongo.Collection(self.DbName, self.CollectionName).Find(selector).Sort(sortFields...).Limit(1).Iter()
+}
+
 // The caller must close the cursor when done. Use: defer cursor.Close()
 func (self *MongoDataSource) FindManyWithBatchSize(selector interface{}, batchSize int) *mgo.Iter {
 	return self.Mongo.Collection(self.DbName, self.CollectionName).Find(selector).Batch(batchSize).Iter()
