@@ -133,6 +133,31 @@ func (self *Mongo) SessionClone() *mgo.Session { return self.session.Clone() }
 // Returns a copy of the session struct.
 func (self *Mongo) SessionCopy() *mgo.Session { return self.session.Clone() }
 
+// The mongo cursor is a wrapper around an mgo.Iter and session object.
+// This alows you to close both the iter and the session in the same call.
+// The cursor supports all of the methods in the iter struct.
+type MongoCursor struct {
+	Iter *mgo.Iter
+	Session *mgo.Session
+}
+
+func (self *MongoCursor) All(result interface{}) error { return self.Iter.All(result) }
+
+// Close closes the session and the iter. If an error is returned, it is from the iter.
+func (self *MongoCursor) Close() error {
+	err := self.Iter.Close()
+	defer self.Session.Close()
+	return err
+}
+
+func (self *MongoCursor) Err() error { return self.Iter.Err() }
+
+func (self *MongoCursor) For(result interface{}, f func() error) (error) { return self.Iter.For(result, f) }
+
+func (self *MongoCursor) Next(result interface{}) bool { return self.Iter.Next(result) }
+
+func (self *MongoCursor) Timeout() bool { return self.Iter.Timeout() }
+
 // Returns a default safest mode. If this is a mongos or replica set, WMode: "majority" - if this is
 // a standalone instance, w: 1
 func defaultSafe(connectionType MongoConnectionType) *mgo.Safe {
