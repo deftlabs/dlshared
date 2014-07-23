@@ -42,7 +42,10 @@ func (self *MongoDataSource) NewObjectId() *bson.ObjectId {
 
 // Insert a document into a collection with the base configured write concern.
 func (self *MongoDataSource) Insert(doc interface{}) error {
-	if err := self.Mongo.Collection(self.DbName, self.CollectionName).Insert(doc); err != nil {
+	session := self.SessionCopy()
+	defer session.Close()
+
+	if err := self.CollectionFromSession(session).Insert(doc); err != nil {
 		if self.IsDupErr(err) { return err }
 		return NewStackError("Unable to Insert - db: %s - collection: %s - error: %v", self.DbName, self.CollectionName, err)
 	}
@@ -52,7 +55,10 @@ func (self *MongoDataSource) Insert(doc interface{}) error {
 
 // Upsert a document in a collection with the base configured write concern.
 func (self *MongoDataSource) Upsert(selector interface{}, change interface{}) error {
-	if _, err := self.Mongo.Collection(self.DbName, self.CollectionName).Upsert(selector, change); err != nil {
+	session := self.SessionCopy()
+	defer session.Close()
+
+	if _, err := self.CollectionFromSession(session).Upsert(selector, change); err != nil {
 		return NewStackError("Unable to Upsert - db: %s - collection: %s - error: %v", self.DbName, self.CollectionName, err)
 	}
 
@@ -61,12 +67,12 @@ func (self *MongoDataSource) Upsert(selector interface{}, change interface{}) er
 
 // Upsert a document into a collection with the passed write concern.
 func (self *MongoDataSource) UpsertSafe(selector interface{}, change interface{}) error {
-	session := self.SessionClone()
+	session := self.SessionCopy()
 	defer session.Close()
 
 	session.SetSafe(self.Mongo.DefaultSafe)
 
-	if _, err := session.DB(self.DbName).C(self.CollectionName).Upsert(selector, change); err != nil {
+	if _, err := self.CollectionFromSession(session).Upsert(selector, change); err != nil {
 		return NewStackError("Unable to Upsert - db: %s - collection: %s - error: %v", self.DbName, self.CollectionName, err)
 	}
 
@@ -75,12 +81,12 @@ func (self *MongoDataSource) UpsertSafe(selector interface{}, change interface{}
 
 // Updates a document into a collection with the passed write concern.
 func (self *MongoDataSource) UpdateSafe(selector interface{}, change interface{}) error {
-	session := self.SessionClone()
+	session := self.SessionCopy()
 	defer session.Close()
 
 	session.SetSafe(self.Mongo.DefaultSafe)
 
-	if err := session.DB(self.DbName).C(self.CollectionName).Update(selector, change); err != nil {
+	if err := self.CollectionFromSession(session).Update(selector, change); err != nil {
 		return NewStackError("Unable to Update - db: %s - collection: %s - error: %v", self.DbName, self.CollectionName, err)
 	}
 
@@ -89,19 +95,18 @@ func (self *MongoDataSource) UpdateSafe(selector interface{}, change interface{}
 
 // Get the count by selector.
 func (self *MongoDataSource) Count(selector interface{}) (int, error) {
-	session := self.SessionClone()
+	session := self.SessionCopy()
 	defer session.Close()
-	return session.DB(self.DbName).C(self.CollectionName).Find(selector).Count()
+	return self.CollectionFromSession(session).Find(selector).Count()
 }
 
 // Insert a document into a collection with the passed write concern.
 func (self *MongoDataSource) InsertSafe(doc interface{}) error {
-	session := self.SessionClone()
-
+	session := self.SessionCopy()
 	defer session.Close()
 
 	session.SetSafe(self.Mongo.DefaultSafe)
-	if err := session.DB(self.DbName).C(self.CollectionName).Insert(doc); err != nil {
+	if err := self.CollectionFromSession(session).Insert(doc); err != nil {
 		if self.IsDupErr(err) { return err }
 		return NewStackError("Unable to InsertSafe - db: %s - collection: %s - error: %v", self.DbName, self.CollectionName, err)
 	}
@@ -111,14 +116,14 @@ func (self *MongoDataSource) InsertSafe(doc interface{}) error {
 
 // Unset a field with the default safe enabled - uses $unset
 func (self *MongoDataSource) UnsetFieldSafe(query interface{}, field string) error {
-	session := self.SessionClone()
+	session := self.SessionCopy()
 	defer session.Close()
 
 	session.SetSafe(self.Mongo.DefaultSafe)
 
 	update := &bson.M{ "$unset": &bson.M{ field: nadaStr } }
 
-	if err := self.RemoveNotFoundErr(session.DB(self.DbName).C(self.CollectionName).Update(query, update)); err != nil {
+	if err := self.RemoveNotFoundErr(self.CollectionFromSession(session).Update(query, update)); err != nil {
 		return NewStackError("Unable to UnsetFieldSafe - db: %s - collection: %s - error: %v", self.DbName, self.CollectionName, err)
 	}
 
@@ -128,14 +133,14 @@ func (self *MongoDataSource) UnsetFieldSafe(query interface{}, field string) err
 // Set fields using a "safe" operation. If this is a standalone mongo or a mongos, it will use: WMode: "majority".
 // If this is a standalone mongo, it will use: w: 1
 func (self *MongoDataSource) SetFieldsSafe(query interface{}, fieldsDoc interface{}) error {
-	session := self.SessionClone()
+	session := self.SessionCopy()
 	defer session.Close()
 
 	session.SetSafe(self.Mongo.DefaultSafe)
 
 	update := &bson.M{ "$set": fieldsDoc }
 
-	if err := self.RemoveNotFoundErr(session.DB(self.DbName).C(self.CollectionName).Update(query, update)); err != nil {
+	if err := self.RemoveNotFoundErr(self.CollectionFromSession(session).Update(query, update)); err != nil {
 		return NewStackError("Unable to SetFieldsSafe - db: %s - collection: %s - error: %v", self.DbName, self.CollectionName, err)
 	}
 
@@ -145,14 +150,14 @@ func (self *MongoDataSource) SetFieldsSafe(query interface{}, fieldsDoc interfac
 // Pull from an array call using a "safe" operation. If this is a standalone mongo or a mongos, it will use: WMode: "majority".
 // If this is a standalone mongo, it will use: w: 1
 func (self *MongoDataSource) PullSafe(query interface{}, fieldsDoc interface{}) error {
-	session := self.SessionClone()
+	session := self.SessionCopy()
 	defer session.Close()
 
 	session.SetSafe(self.Mongo.DefaultSafe)
 
 	update := &bson.M{ "$pull": fieldsDoc }
 
-	if err := self.RemoveNotFoundErr(session.DB(self.DbName).C(self.CollectionName).Update(query, update)); err != nil {
+	if err := self.RemoveNotFoundErr(self.CollectionFromSession(session).Update(query, update)); err != nil {
 		return NewStackError("Unable to PullSafe - db: %s - collection: %s - error: %v", self.DbName, self.CollectionName, err)
 	}
 
@@ -162,53 +167,69 @@ func (self *MongoDataSource) PullSafe(query interface{}, fieldsDoc interface{}) 
 // Find the distinct string fields. Do not use this on datasets with a large amount of distinct values or
 // you will blow out memory. The selector can be nil.
 func (self *MongoDataSource) FindDistinctStrs(selector interface{}, fieldName string) ([]string, error) {
+	session := self.SessionCopy()
+	defer session.Close()
+
 	var result []string
-	if err := self.Mongo.Collection(self.DbName, self.CollectionName).Find(selector).Distinct(fieldName, &result); err != nil { return nil, err }
+	if err := self.CollectionFromSession(session).Find(selector).Distinct(fieldName, &result); err != nil { return nil, err }
 
 	return result, nil
 }
 
 // The caller must close the cursor when done. Use: defer cursor.Close()
-func (self *MongoDataSource) FindAllWithBatchSize(batchSize int) *mgo.Iter {
-	return self.Mongo.Collection(self.DbName, self.CollectionName).Find(&bson.M{}).Batch(batchSize).Iter()
+func (self *MongoDataSource) FindAllWithBatchSize(batchSize int) *MongoCursor {
+	cursor := &MongoCursor{ Session: self.SessionCopy() }
+
+	cursor.Iter = self.CollectionFromSession(cursor.Session).Find(&bson.M{}).Batch(batchSize).Iter()
+	return cursor
 }
 
 // You must close this cursor.
-func (self *MongoDataSource) FindFirst(selector interface{}, sortFields ...string) *mgo.Iter {
-	return self.Mongo.Collection(self.DbName, self.CollectionName).Find(selector).Sort(sortFields...).Limit(1).Iter()
+func (self *MongoDataSource) FindFirst(selector interface{}, sortFields ...string) *MongoCursor {
+	cursor := &MongoCursor{ Session: self.SessionCopy() }
+	cursor.Iter = self.CollectionFromSession(cursor.Session).Find(selector).Sort(sortFields...).Limit(1).Iter()
+	return cursor
 }
 
 // The caller must close the cursor when done. Use: defer cursor.Close()
-func (self *MongoDataSource) FindManyWithBatchSize(selector interface{}, batchSize int) *mgo.Iter {
-	return self.Mongo.Collection(self.DbName, self.CollectionName).Find(selector).Batch(batchSize).Iter()
+func (self *MongoDataSource) FindManyWithBatchSize(selector interface{}, batchSize int) *MongoCursor {
+	cursor := &MongoCursor{ Session: self.SessionCopy() }
+	cursor.Iter = self.CollectionFromSession(cursor.Session).Find(selector).Batch(batchSize).Iter()
+	return cursor
 }
 
 // The caller must close the cursor when done. Use: defer cursor.Close()
-func (self *MongoDataSource) FindManyWithBatchSizeAndSort(selector interface{}, batchSize int, sortFields ...string) *mgo.Iter {
-	return self.Mongo.Collection(self.DbName, self.CollectionName).Find(selector).Sort(sortFields...).Batch(batchSize).Iter()
+func (self *MongoDataSource) FindManyWithBatchSizeAndSort(selector interface{}, batchSize int, sortFields ...string) *MongoCursor {
+	cursor := &MongoCursor{ Session: self.SessionCopy() }
+	cursor.Iter = self.CollectionFromSession(cursor.Session).Find(selector).Sort(sortFields...).Batch(batchSize).Iter()
+	return cursor
 }
 
 // The caller must close the cursor when done. Use: defer cursor.Close()
-func (self *MongoDataSource) FindManyWithOffsetMaxBatchSize(selector interface{}, offset, max, batchSize int) *mgo.Iter {
-	return self.Mongo.Collection(self.DbName, self.CollectionName).Find(selector).Skip(offset).Limit(max).Batch(batchSize).Iter()
+func (self *MongoDataSource) FindManyWithOffsetMaxBatchSize(selector interface{}, offset, max, batchSize int) *MongoCursor {
+	cursor := &MongoCursor{ Session: self.SessionCopy() }
+	cursor.Iter = self.CollectionFromSession(cursor.Session).Find(selector).Skip(offset).Limit(max).Batch(batchSize).Iter()
+	return cursor
 }
 
 // The caller must close the cursor when done. Use: defer cursor.Close()
-func (self *MongoDataSource) FindManyWithOffsetMaxBatchSizeAndSort(selector interface{}, offset, max, batchSize int, sortFields ...string) *mgo.Iter {
-	return self.Mongo.Collection(self.DbName, self.CollectionName).Find(selector).Sort(sortFields...).Skip(offset).Limit(max).Batch(batchSize).Iter()
+func (self *MongoDataSource) FindManyWithOffsetMaxBatchSizeAndSort(selector interface{}, offset, max, batchSize int, sortFields ...string) *MongoCursor {
+	cursor := &MongoCursor{ Session: self.SessionCopy() }
+	cursor.Iter = self.CollectionFromSession(cursor.Session).Find(selector).Sort(sortFields...).Skip(offset).Limit(max).Batch(batchSize).Iter()
+	return cursor
 }
 
 // Push to an array call using a "safe" operation. If this is a standalone mongo or a mongos, it will use: WMode: "majority".
 // If this is a standalone mongo, it will use: w: 1
 func (self *MongoDataSource) PushSafe(query interface{}, fieldsDoc interface{}) error {
-	session := self.SessionClone()
+	session := self.SessionCopy()
 	defer session.Close()
 
 	session.SetSafe(self.Mongo.DefaultSafe)
 
 	update := &bson.M{ "$push": fieldsDoc }
 
-	if err := self.RemoveNotFoundErr(session.DB(self.DbName).C(self.CollectionName).Update(query, update)); err != nil {
+	if err := self.RemoveNotFoundErr(self.CollectionFromSession(session).Update(query, update)); err != nil {
 		return NewStackError("Unable to PushSafe - db: %s - collection: %s - error: %v", self.DbName, self.CollectionName, err)
 	}
 
@@ -218,14 +239,14 @@ func (self *MongoDataSource) PushSafe(query interface{}, fieldsDoc interface{}) 
 // Set a property using a "safe" operation. If this is a standalone mongo or a mongos, it will use: WMode: "majority".
 // If this is a standalone mongo, it will use: w: 1
 func (self *MongoDataSource) SetFieldSafe(query interface{}, field string, value interface{}) error {
-	session := self.SessionClone()
+	session := self.SessionCopy()
 	defer session.Close()
 
 	session.SetSafe(self.Mongo.DefaultSafe)
 
 	update := &bson.M{ "$set": &bson.M{ field: value } }
 
-	if err := self.RemoveNotFoundErr(session.DB(self.DbName).C(self.CollectionName).Update(query, update)); err != nil {
+	if err := self.RemoveNotFoundErr(self.CollectionFromSession(session).Update(query, update)); err != nil {
 		return NewStackError("Unable to SetFieldSafe - db: %s - collection: %s - error: %v", self.DbName, self.CollectionName, err)
 	}
 
@@ -250,14 +271,22 @@ func (self *MongoDataSource) IsDupErr(err error) bool { return mgo.IsDup(err) }
 func (self *MongoDataSource) NotFoundErr(err error) bool { return err == mgo.ErrNotFound }
 
 // Finds one document or returns false.
-func (self *MongoDataSource) FindOne(query *bson.M, result interface{}) error { return self.Collection().Find(query).One(result) }
+func (self *MongoDataSource) FindOne(query *bson.M, result interface{}) error {
+	session := self.SessionCopy()
+	defer session.Close()
+
+	return self.CollectionFromSession(session).Find(query).One(result)
+}
 
 // Delete one document by the _id.
 func (self *MongoDataSource) DeleteById(id interface{}) error { return self.DeleteOne(&bson.M{"_id": id }) }
 
 // Delete one document from the collection. If the document is not found, no error is returned.
 func (self *MongoDataSource) DeleteOne(selector interface{}) error {
-	if err := self.RemoveNotFoundErr(self.Collection().Remove(selector)); err != nil {
+	session := self.SessionCopy()
+	defer session.Close()
+
+	if err := self.RemoveNotFoundErr(self.CollectionFromSession(session).Remove(selector)); err != nil {
 		return NewStackError("Unable to DeleteOne - db: %s - collection: %s - error: %v", self.DbName, self.CollectionName, err)
 	}
 
@@ -267,7 +296,10 @@ func (self *MongoDataSource) DeleteOne(selector interface{}) error {
 // Delete one or more documents from the collection. If the document(s) is/are not found, no error
 // is returned.
 func (self *MongoDataSource) Delete(selector interface{}) error {
-	if _, err := self.Collection().RemoveAll(selector); err != nil {
+	session := self.SessionCopy()
+	defer session.Close()
+
+	if _, err := self.CollectionFromSession(session).RemoveAll(selector); err != nil {
 		return NewStackError("Unable to Delete - db: %s - collection: %s - error: %v", self.DbName, self.CollectionName, err)
 	}
 
@@ -373,6 +405,11 @@ func (self *MongoDataSource) EnsureUniqueSparseIndex(fields []string) error {
 	}
 
 	return nil
+}
+
+// Returns the collection from the session.
+func (self *MongoDataSource) CollectionFromSession(session *mgo.Session) *mgo.Collection {
+	return session.DB(self.DbName).C(self.CollectionName)
 }
 
 // Returns the collection from the session.
