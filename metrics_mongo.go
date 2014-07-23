@@ -19,7 +19,6 @@ package dlshared
 import (
 	"fmt"
 	"time"
-	"labix.org/v2/mgo"
 	"labix.org/v2/mgo/bson"
 )
 
@@ -92,7 +91,7 @@ func (self *MetricsMongo) persistCounter(sourceName string, metric *Metric) {
 func (self *MetricsMongo) FindDistinctMetricNames() ([]string, error) { return self.FindDistinctStrs(nil, "name") }
 
 // Returns the cursor for metrics by metric name. The caller must close the cursor when done.
-func (self *MetricsMongo) FindMetricsByName(metricName string, batchSize int) *mgo.Iter { return self.FindManyWithBatchSize(&bson.M{ "name": metricName }, batchSize) }
+func (self *MetricsMongo) FindMetricsByName(metricName string, batchSize int) *MongoCursor { return self.FindManyWithBatchSize(&bson.M{ "name": metricName }, batchSize) }
 
 func (self *MetricsMongo) persistGauge(sourceName string, metric *Metric) {
 
@@ -158,13 +157,9 @@ func (self *MetricsMongo) Start(kernel *Kernel) error {
 	self.Mongo = kernel.GetComponent(self.mongoComponentName).(*Mongo)
 
 	if err := self.EnsureIndex([]string{ "name" }); err != nil { return err }
-
 	if err := self.EnsureIndex([]string{ "source" }); err != nil { return err }
-
 	if err := self.EnsureIndex([]string{ "name", "source", "value" }); err != nil { return err }
-
 	if err := self.EnsureIndex([]string{ "source", "updated" }); err != nil { return err }
-
 	if err := self.EnsureUniqueIndex([]string{ "name", "source" }); err != nil { return err }
 
 	return nil
