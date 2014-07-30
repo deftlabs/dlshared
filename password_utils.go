@@ -23,6 +23,13 @@ var passwordGenerateUpperCase = []byte("ABCDEFGHJKLMNPQRSTWXYZ")
 var passwordGenerateNumeric = []byte("23456789")
 var passwordGenerateSpecial = []byte("*$+?&=!%{}/")
 
+const(
+	passwordGenerateLowerKey = "lower"
+	passwordGenerateUpperKey = "upper"
+	passwordGenerateNumKey = "num"
+	passwordGenerateSpecialKey = "special"
+)
+
 // Generate a random password based on the inputs. Make sure you seed random on server/process startup
 // E.g., rand.Seed( time.Now().UTC().UnixNano())
 // This logic is based on the example on StackOverflow seen here:
@@ -35,10 +42,10 @@ func GeneratePassword(	minPasswordLength,
 						minSpecialCount int32) string {
 
     groupsUsed := map[string]int32 {
-		"lower": minLowerCaseCount,
-		"upper": minUpperCaseCount,
-		"num": minNumberCount,
-		"special": minSpecialCount,
+		passwordGenerateLowerKey: minLowerCaseCount,
+		passwordGenerateUpperKey: minUpperCaseCount,
+		passwordGenerateNumKey: minNumberCount,
+		passwordGenerateSpecialKey: minSpecialCount,
 	}
 
 	if minPasswordLength > maxPasswordLength {
@@ -46,7 +53,6 @@ func GeneratePassword(	minPasswordLength,
 	}
 
 	passwordLength := minPasswordLength + rand.Int31n(maxPasswordLength - minPasswordLength)
-
 	password := make([]byte, passwordLength, passwordLength)
 
 	remainingBytes := minLowerCaseCount + minUpperCaseCount + minNumberCount + minSpecialCount
@@ -64,10 +70,10 @@ func GeneratePassword(	minPasswordLength,
 			for key, value := range groupsUsed {
 				if value <= 0 { continue }
 				switch key {
-					case "lower": selectable = append(selectable, passwordGenerateLowerCase...)
-					case "upper": selectable = append(selectable, passwordGenerateUpperCase...)
-					case "num": selectable = append(selectable, passwordGenerateNumeric...)
-					case "special": selectable = append(selectable, passwordGenerateSpecial...)
+					case passwordGenerateLowerKey: selectable = append(selectable, passwordGenerateLowerCase...)
+					case passwordGenerateUpperKey: selectable = append(selectable, passwordGenerateUpperCase...)
+					case passwordGenerateNumKey: selectable = append(selectable, passwordGenerateNumeric...)
+					case passwordGenerateSpecialKey: selectable = append(selectable, passwordGenerateSpecial...)
 				}
 			}
 		}
@@ -76,10 +82,10 @@ func GeneratePassword(	minPasswordLength,
 		password[idx] = next
 
 		var groupUsedKey string
-		if byteSliceContainsByte(passwordGenerateLowerCase, next) { groupUsedKey = "lower"
-		} else if byteSliceContainsByte(passwordGenerateUpperCase, next) { groupUsedKey = "upper"
-		} else if byteSliceContainsByte(passwordGenerateNumeric, next) { groupUsedKey = "num"
-		} else if byteSliceContainsByte(passwordGenerateSpecial, next) { groupUsedKey = "special" }
+		if ByteSliceContainsByte(passwordGenerateLowerCase, next) { groupUsedKey = "lower"
+		} else if ByteSliceContainsByte(passwordGenerateUpperCase, next) { groupUsedKey = "upper"
+		} else if ByteSliceContainsByte(passwordGenerateNumeric, next) { groupUsedKey = "num"
+		} else if ByteSliceContainsByte(passwordGenerateSpecial, next) { groupUsedKey = "special" }
 
 		groupsUsed[groupUsedKey] = groupsUsed[groupUsedKey] - 1
 		if groupsUsed[groupUsedKey] >= 0 { remainingBytes-- }
@@ -87,10 +93,4 @@ func GeneratePassword(	minPasswordLength,
 
 	return string(password)
 }
-
-func byteSliceContainsByte(slice []byte, c byte) bool {
-	for _, v := range slice { if v == c { return true } }
-	return false
-}
-
 
