@@ -20,9 +20,7 @@ import "testing"
 
 func TestStrIsTrue(t *testing.T) {
 
-	if !StrIsTrue("true") {
-		t.Errorf("TestStrIsTrue is broken - expecting true - string param: true")
-	}
+	if !StrIsTrue("true") { t.Errorf("TestStrIsTrue is broken - expecting true - string param: true") }
 
 	if !StrIsTrue("yes") {
 		t.Errorf("TestStrIsTrue is broken - expecting true - string param: yes")
