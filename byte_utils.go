@@ -130,6 +130,11 @@ func AppendBson(data []byte, v interface{}) ([]byte, error) {
 	}
 }
 
+func ByteSliceContainsByte(slice []byte, c byte) bool {
+	for _, v := range slice { if v == c { return true } }
+	return false
+}
+
 func AppendCStr(data []byte, v string) []byte {
 	data = AppendByte(data, []byte(v)...)
 	data = AppendByte(data, 0)
