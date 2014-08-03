@@ -275,6 +275,12 @@ func TestSlices(t *testing.T) {
 	if slice != nil { t.Errorf("TestSlice is broken - slice is not nil") }
 
 	if len(slice) != 0 { t.Errorf("TestSlice is broken - slice length is not zero") }
+
+	values0 := []string{ "test" }
+	values1 := []string{ }
+	values0 = append(values0, values1...)
+
+	if len(values0) != 1 { t.Errorf("TestSlice is broken - empty array append") }
 }
 
 // Confirm the way data types behave.
