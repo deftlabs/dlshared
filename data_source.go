@@ -59,6 +59,7 @@ func (self *MongoDataSource) Upsert(selector interface{}, change interface{}) er
 	defer session.Close()
 
 	if _, err := self.CollectionFromSession(session).Upsert(selector, change); err != nil {
+		if self.IsDupErr(err) { return err }
 		return NewStackError("Unable to Upsert - db: %s - collection: %s - error: %v", self.DbName, self.CollectionName, err)
 	}
 
@@ -73,6 +74,7 @@ func (self *MongoDataSource) UpsertSafe(selector interface{}, change interface{}
 	session.SetSafe(self.Mongo.DefaultSafe)
 
 	if _, err := self.CollectionFromSession(session).Upsert(selector, change); err != nil {
+		if self.IsDupErr(err) { return err }
 		return NewStackError("Unable to Upsert - db: %s - collection: %s - error: %v", self.DbName, self.CollectionName, err)
 	}
 
@@ -87,6 +89,7 @@ func (self *MongoDataSource) UpdateSafe(selector interface{}, change interface{}
 	session.SetSafe(self.Mongo.DefaultSafe)
 
 	if err := self.CollectionFromSession(session).Update(selector, change); err != nil {
+		if self.IsDupErr(err) { return err }
 		return NewStackError("Unable to Update - db: %s - collection: %s - error: %v", self.DbName, self.CollectionName, err)
 	}
 
@@ -124,6 +127,7 @@ func (self *MongoDataSource) UnsetFieldSafe(query interface{}, field string) err
 	update := &bson.M{ "$unset": &bson.M{ field: nadaStr } }
 
 	if err := self.RemoveNotFoundErr(self.CollectionFromSession(session).Update(query, update)); err != nil {
+		if self.IsDupErr(err) { return err }
 		return NewStackError("Unable to UnsetFieldSafe - db: %s - collection: %s - error: %v", self.DbName, self.CollectionName, err)
 	}
 
@@ -141,6 +145,7 @@ func (self *MongoDataSource) SetFieldsSafe(query interface{}, fieldsDoc interfac
 	update := &bson.M{ "$set": fieldsDoc }
 
 	if err := self.RemoveNotFoundErr(self.CollectionFromSession(session).Update(query, update)); err != nil {
+		if self.IsDupErr(err) { return err }
 		return NewStackError("Unable to SetFieldsSafe - db: %s - collection: %s - error: %v", self.DbName, self.CollectionName, err)
 	}
 
@@ -158,6 +163,7 @@ func (self *MongoDataSource) PullSafe(query interface{}, fieldsDoc interface{}) 
 	update := &bson.M{ "$pull": fieldsDoc }
 
 	if err := self.RemoveNotFoundErr(self.CollectionFromSession(session).Update(query, update)); err != nil {
+		if self.IsDupErr(err) { return err }
 		return NewStackError("Unable to PullSafe - db: %s - collection: %s - error: %v", self.DbName, self.CollectionName, err)
 	}
 
@@ -230,6 +236,7 @@ func (self *MongoDataSource) PushSafe(query interface{}, fieldsDoc interface{}) 
 	update := &bson.M{ "$push": fieldsDoc }
 
 	if err := self.RemoveNotFoundErr(self.CollectionFromSession(session).Update(query, update)); err != nil {
+		if self.IsDupErr(err) { return err }
 		return NewStackError("Unable to PushSafe - db: %s - collection: %s - error: %v", self.DbName, self.CollectionName, err)
 	}
 
@@ -247,6 +254,7 @@ func (self *MongoDataSource) SetFieldSafe(query interface{}, field string, value
 	update := &bson.M{ "$set": &bson.M{ field: value } }
 
 	if err := self.RemoveNotFoundErr(self.CollectionFromSession(session).Update(query, update)); err != nil {
+		if self.IsDupErr(err) { return err }
 		return NewStackError("Unable to SetFieldSafe - db: %s - collection: %s - error: %v", self.DbName, self.CollectionName, err)
 	}
 
@@ -287,6 +295,7 @@ func (self *MongoDataSource) DeleteOne(selector interface{}) error {
 	defer session.Close()
 
 	if err := self.RemoveNotFoundErr(self.CollectionFromSession(session).Remove(selector)); err != nil {
+		if self.IsDupErr(err) { return err }
 		return NewStackError("Unable to DeleteOne - db: %s - collection: %s - error: %v", self.DbName, self.CollectionName, err)
 	}
 
@@ -300,6 +309,7 @@ func (self *MongoDataSource) Delete(selector interface{}) error {
 	defer session.Close()
 
 	if _, err := self.CollectionFromSession(session).RemoveAll(selector); err != nil {
+		if self.IsDupErr(err) { return err }
 		return NewStackError("Unable to Delete - db: %s - collection: %s - error: %v", self.DbName, self.CollectionName, err)
 	}
 
