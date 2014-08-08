@@ -77,13 +77,13 @@ type HttpParam struct {
 }
 
 // Make sure your params are present and valid before trying to access.
-func (self *HttpParam) Int() int { return self.Value.(int) }
+func (self *HttpParam) Int() int { if self.Value != nil { return self.Value.(int) } else { return int(0) } }
 
-func (self *HttpParam) Float() float64 { return self.Value.(float64) }
+func (self *HttpParam) Float() float64 { if self.Value != nil { return self.Value.(float64) } else { return float64(0) } }
 
 func (self *HttpParam) String() string { return self.Value.(string) }
 
-func (self *HttpParam) Bool() bool { return self.Value.(bool) }
+func (self *HttpParam) Bool() bool { if self.Value != nil { return self.Value.(bool) } else { return false } }
 
 func (self *HttpParam) ObjectId() *bson.ObjectId { if self.Value != nil { return self.Value.(*bson.ObjectId) } else { return nil } }
 
