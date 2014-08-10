@@ -81,7 +81,7 @@ func (self *HttpParam) Int() int { if self.Value != nil { return self.Value.(int
 
 func (self *HttpParam) Float() float64 { if self.Value != nil { return self.Value.(float64) } else { return float64(0) } }
 
-func (self *HttpParam) String() string { return self.Value.(string) }
+func (self *HttpParam) String() string { if self.Value != nil { return self.Value.(string) } else { return nadaStr } }
 
 func (self *HttpParam) Bool() bool { if self.Value != nil { return self.Value.(bool) } else { return false } }
 
