@@ -22,9 +22,39 @@ import (
 	"time"
 	"errors"
 	"testing"
+	"encoding/json"
 	"labix.org/v2/mgo"
 	"labix.org/v2/mgo/bson"
 )
+
+func TestStruct(t *testing.T) {
+	var test jsonTestStruct
+	if &test == nil { t.Errorf("TestPointer is broken - pointer is not nil") }
+}
+
+type jsonTestStruct struct {
+	Number interface{} `json:"number,omitempty"`
+	Other int `json:"other,omitempty"`
+}
+
+func TestJson(t *testing.T) {
+
+	// This test is in place to verify omitempty behavior. If you have a
+	// zero value for an
+	testStruct := &jsonTestStruct{}
+
+	rawJson, err := json.Marshal(testStruct)
+	if err != nil { t.Errorf("TestJson is broken - err: %v", err); return }
+
+	if string(rawJson) != "{}" { t.Errorf("TestJson is broken - expecting: '{}' - received: %s", string(rawJson)) }
+
+	testStruct.Number = 0
+
+	rawJson, err = json.Marshal(testStruct)
+	if err != nil { t.Errorf("TestJson is broken - err: %v", err); return }
+
+	if string(rawJson) != "{\"number\":0}" { t.Errorf("TestJson is broken - expecting: '{\"number\":0}' - received: %s", string(rawJson)) }
+}
 
 func TestTime(t *testing.T) {
 
@@ -90,6 +120,26 @@ func TestChannels1(t *testing.T) {
 
 	if result != nil { t.Errorf("TestChannels1 is broken - result should be nil") }
 
+}
+
+// A test to see what happens when a channel in a select is closed.
+func TestChannelLoop(t *testing.T) {
+
+	loopChannel := make(chan bool)
+	stopChannel := make(chan bool)
+
+	go func() {
+		time.Sleep(1 * time.Second)
+		close(loopChannel)
+		stopChannel <- true
+	}()
+
+	for {
+		select {
+			case <- loopChannel:
+			case <- stopChannel: return
+		}
+	}
 }
 
 func TestChannels(t *testing.T) {
