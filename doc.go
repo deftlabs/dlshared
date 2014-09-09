@@ -13,6 +13,7 @@
 //        code.google.com/p/go.crypto/bcrypt
 //        github.com/nranchev/go-libGeoIP
 //        github.com/robfig/cron
+// 		  github.com/hashicorp/golang-lru
 //
 // To initialize the external libraries, run: `make init.libs`
 //
