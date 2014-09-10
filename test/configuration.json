@@ -38,6 +38,15 @@
 		}
 	},
 
+	"apn": {
+		"gateway": "gateway.sandbox.push.apple.com:2195",
+		"feedback": "feedback.sandbox.push.apple.com:2196",
+		"certificateFile": "SOME_CERTIFICATE.pem",
+		"keyFile": "SOME_PRIVATE_KEY.pem",
+		"socketTimeoutInMs": "4000",
+		"msgCacheElementCount": "2000"
+	},
+
 	"cron": {
 		"scheduled": {
 			"mongoComponentId": "MongoTestDb",
