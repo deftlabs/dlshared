@@ -226,12 +226,15 @@ func (self *TcpSocketProcessor) Start() error {
 
 	// Check to see if this a TLS connection - if so, setup the config.
 	if len(self.certificateFile) > 0 {
+
+		self.Logf(Info, "cert: %s - key: %s", self.certificateFile, self.keyFile)
+
 		cert, err := tls.LoadX509KeyPair(self.certificateFile, self.keyFile)
-		if err != nil { return NewStackError("Unable to init tls cert - cert: %s - key: %s", self.certificateFile, self.keyFile) }
+		if err != nil { return NewStackError("Unable to init tls cert - cert: %s - key: %s - err: %v", self.certificateFile, self.keyFile, err) }
 
 		parts := strings.Split(self.address, tcpNetworkPortSep)
 
-		if len(parts) != 1 {  return NewStackError("Invalid address: %s", self.address) }
+		if len(parts) <= 1 {  return NewStackError("Invalid address: %s", self.address) }
 
 		self.tlsConf = &tls.Config{
 			Certificates: []tls.Certificate{ cert },
