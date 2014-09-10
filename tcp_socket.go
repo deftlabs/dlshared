@@ -227,8 +227,6 @@ func (self *TcpSocketProcessor) Start() error {
 	// Check to see if this a TLS connection - if so, setup the config.
 	if len(self.certificateFile) > 0 {
 
-		self.Logf(Info, "cert: %s - key: %s", self.certificateFile, self.keyFile)
-
 		cert, err := tls.LoadX509KeyPair(self.certificateFile, self.keyFile)
 		if err != nil { return NewStackError("Unable to init tls cert - cert: %s - key: %s - err: %v", self.certificateFile, self.keyFile, err) }
 
