@@ -303,8 +303,11 @@ func TestObjectId(t *testing.T) {
 	p1 = &id1
 	p2 = &id2
 
-	if p1 == p2 { t.Errorf("TestStructs is broken - pointer match") }
-	if *p1 == *p2 { t.Errorf("TestStructs is broken - deferenced pointer match") }
+	if p1 == p2 { t.Errorf("TestObjectId is broken - pointer match") }
+	if *p1 == *p2 { t.Errorf("TestObjectId is broken - deferenced pointer match") }
+
+	var testId *bson.ObjectId
+	if testId != nil { t.Errorf("TestObjectId is broken - not nil object id") }
 }
 
 // Confirm the way errors behave.
