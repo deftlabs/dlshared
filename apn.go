@@ -61,7 +61,8 @@ const (
 )
 
 // The apple push notification (apn) service. This component dispatches JSON messages to
-// Apple via HTTP. The component is configured by passing in the configuration path.
+// Apple via a custom Apple binary protocol. The component is configured by passing in the
+// configuration path.
 //
 // 		"apn": {
 //			"gateway": "gateway.sandbox.push.apple.com:2195",
