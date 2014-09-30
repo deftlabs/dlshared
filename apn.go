@@ -100,8 +100,6 @@ type ApplePushNotificationSvc struct {
 	feedbackWriteChannel chan TcpSocketProcessorWrite
 	feedbackReadChannel chan TcpSocketProcessorRead
 
-	updateStatsTicker *time.Ticker
-
 	lruCache *lrucache.Cache
 }
 
@@ -236,7 +234,6 @@ func NewApplePushNotificationSvc(configPath string, requestChannel, responseChan
 										feedbackWriteChannel: make(chan TcpSocketProcessorWrite),
 										feedbackReadChannel: make(chan TcpSocketProcessorRead),
 										shutdownChannel: make(chan bool),
-										updateStatsTicker: time.NewTicker(1 * time.Second),
 	}
 }
 
